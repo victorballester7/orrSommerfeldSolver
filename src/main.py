@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from src_py.config import Config, Branch, ProblemType
+from config import Config, Branch, ProblemType
 from pathlib import Path
 
 
