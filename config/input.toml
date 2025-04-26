@@ -1,0 +1,32 @@
+[general]
+n = 200 
+re = 1000 # Reynolds number
+alpha = {r = 0.7, i = 0.0}
+beta = {r = 0.0, i = 0.0}
+omega = {r = 0.0, i = 0.0}
+
+[flags]
+branch = "temporal" # Options are: "temporal" (fixed alpha, solves the eigenvalue problem for omega), "spatial" (fixed omega, solves the eigenvalue problem for alpha)
+problem = "Custom" # Options are: "BoundaryLayer, "Poiseuille", "Couette", "Custom"
+fileWriteEigenvalues = "data/eigenvalues.dat" # File to write the eigenvalues to
+doPlot = false # If true, the code will plot the eigenvalues
+use_c = false # When temporal branch is used, plot in terms of c instead of omega (omega = alpha * c)
+run_multiple = true # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
+
+# fill only when problem = "Custom"
+[customProblemFlags]
+# filenameUprofile = "/home/victor/Desktop/PhD/src/flatSurfaceRe1000IncNS/dns/oldSetups/08_changedformula_newUpperBC/data/points_x660_n2800.dat"
+filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/baseflow/dns/d4_w15/data/points_x900_n400.dat"
+plotUprofile = false # If true, the code will plot the U profile input.
+colX = 1 # Column of the x (actually y) coordinate in the file 
+colY = 2 # Column of the y (actually U) coordinate in the file
+numSkipHeaderLines = 3 # Number of lines to skip at the beginning of the file
+
+# fill only when run_multiple = true
+[runMultipleFlags]
+vars_r = {min = 0.05, max = 0.4, num = 50} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
+vars_i = {min = 0.0, max = 0.0, num = 1} # Range of alpha_i values to run (for temporal branch) or omega_i values (for spatial branch)
+
+[plot]
+plot_lims = {xmin = 0.0, xmax = 1.2, ymin = -2, ymax = 0.1} # Limits of the plot
+
