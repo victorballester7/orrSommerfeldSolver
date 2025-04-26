@@ -2,7 +2,7 @@
 
 Solver of the Orr Sommerfeld equation, both for the  temporal and spatial stability analysis. The code follows the work of: 
 
-_Kirchner, N.P. (2000), Computational aspects of the spectral Galerkin FEM for the Orr–Sommerfeld equation. Int. J. Numer. Meth. Fluids, 32: 105-121. https://doi.org/10.1002/(SICI)1097-0363(20000115)32:1<105::AID-FLD938>3.0.CO;2-X_
+_Kirchner, N.P. (2000), Computational aspects of the spectral Galerkin FEM for the Orr–Sommerfeld equation. Int. J. Numer. Meth. Fluids, 32: 105-121. [https://doi.org/10.1002](https://doi.org/10.1002/(SICI)1097-0363(20000115)32:1<105::AID-FLD938>3.0.CO;2-X)_
 
 The paper can be found in `docs/spectralElementMethodOrrSommerfeld_0.pdf`. The Galerkin method has the advantage of avoiding the appearance of spurious eigenvalues, which is a common issue in collocation-based spectral codes.
 
