@@ -6,6 +6,10 @@ _Kirchner, N.P. (2000), Computational aspects of the spectral Galerkin FEM for t
 
 The paper can be found in `docs/spectralElementMethodOrrSommerfeld_0.pdf`. The Galerkin method has the advantage of avoiding the appearance of spurious eigenvalues, which is a common issue in collocation-based spectral codes.
 
+The notation and eigenvalue problems are taken from the book:
+
+_Schmid, P. J., & Henningson, D. S. (2001). Stability and transition in shear flows. Springer._
+
 ## Requirements
 
 - Python 3.7 or later
