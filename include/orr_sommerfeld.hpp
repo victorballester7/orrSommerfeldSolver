@@ -38,6 +38,18 @@ public:
   double getd2U(__attribute__((unused)) double z) override { return -2.0; }
 };
 
+// Plane Couette flow profile
+class Couette : public Uprofile {
+public:
+  Couette() {}
+
+  double getU(double z) override {
+    return z; // Plane Couette flow
+  }
+
+  double getd2U(__attribute__((unused)) double z) override { return 0.0; }
+};
+
 // Blasius flow profile
 class CustomU : public Uprofile {
 private:
@@ -172,6 +184,8 @@ public:
 
     if (config.problem == PB_POISEUILLE) {
       Uprofile = new Poiseuille();
+    } else if (config.problem == PB_COUETTE) {
+      Uprofile = new Couette();
     } else if (config.problem == PB_BOUNDARY_LAYER) {
       uint colX = 1;
       uint colY = 2;
