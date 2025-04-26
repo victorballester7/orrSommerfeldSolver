@@ -96,6 +96,8 @@ def plotEV(conf: Config):
             )
 
             plt.colorbar(sc, label=f"Re({varlabel})")
+        plt.xlim(conf.plot_lims.xmin, conf.plot_lims.xmax)
+        plt.ylim(conf.plot_lims.ymin, conf.plot_lims.ymax)
     else:
         plt.scatter(re, im, label="Eigenvalues", alpha=0.7)
         plt.xlim(conf.plot_lims.xmin, conf.plot_lims.xmax)

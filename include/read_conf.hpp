@@ -5,6 +5,7 @@
 #include <complex>
 #include <string>
 #include <set>
+#include <iostream>
 
 using complex = std::complex<double>;
 
@@ -37,10 +38,9 @@ public:
   // General
   uint p;
   double re;
-  complex alpha;
+  complex var;
   complex beta;
   complex k2;
-  complex omega;
 
   // Flags
   std::string branch;
@@ -69,21 +69,18 @@ public:
   bool load(const std::string &filename);
 
   // Set the variable for the simulation
-  void setVar(complex var) {
+  void setVar(complex var_) {
+    var = var_;
     if (branch == BRANCH_TEMPORAL) {
-      alpha = var;
-      k2 = alpha * alpha + beta * beta;
-    } else if (branch == BRANCH_SPATIAL) {
-      omega = var;
+      k2 = var * var + beta * beta;
     }
   }
 private:
   void deltaStarRescaling(){
     if (problem == PB_BOUNDARY_LAYER) {
       // rescale quantities for Blasius flow because delta* is not 1, it is DELTASTAR_BLASIUS
-      alpha = alpha / DELTASTAR_BLASIUS;
+      var = var / DELTASTAR_BLASIUS;
       beta = beta / DELTASTAR_BLASIUS;
-      omega = omega / DELTASTAR_BLASIUS;
 
       vars_r.min = vars_r.min / DELTASTAR_BLASIUS;
       vars_r.max = vars_r.max / DELTASTAR_BLASIUS;
@@ -124,11 +121,24 @@ private:
 
   complex getK2() {
     // Calculate k2 based on alpha and beta
-    return std::pow(alpha, 2) + std::pow(beta, 2);
+    return std::pow(var, 2) + std::pow(beta, 2);
   }
 
   bool isValid(const std::string &value, const std::set<std::string> &validValues) {
     return validValues.find(value) != validValues.end();
+  }
+
+  bool isValidMessage(const std::string field, const std::string &value, const std::set<std::string> &validValues) {
+    if (!isValid(value, validValues)) {
+      std::cerr << "Invalid " << field << ": " << value
+                << ". Available options are: ";
+      for (const auto &v : validValues) {
+        std::cerr << v << " ";
+      }
+      std::cerr << std::endl;
+      return false;
+    }
+    return true;
   }
 };
 

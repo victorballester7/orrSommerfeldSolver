@@ -18,6 +18,7 @@ class ProblemType(Enum):
     Couette = "Couette"
     Custom = "Custom"
 
+
 class ComplexNumber(BaseModel):
     r: float
     i: float
@@ -52,21 +53,21 @@ class PlotLimits(BaseModel):
             if problem in {ProblemType.BoundaryLayer, ProblemType.Custom}:
                 return cls(xmin=-0.2, xmax=1, ymin=-0.1, ymax=0.8)
             else:
-                return cls(xmin=0.2, xmax=1, ymin=-0.1, ymax=0.7) 
+                return cls(xmin=0.2, xmax=1, ymin=-0.1, ymax=0.7)
+
 
 class Config(BaseModel):
     DELTASTAR: Final[float] = 1.7207876573
 
     n: int
     re: float
-    alpha: complex
+    var: complex
     beta: complex
-    omega: complex
 
     branch: Branch
     problem: ProblemType
-    
-    fileWriteEigenvalues: Path   
+
+    fileWriteEigenvalues: Path
     doPlot: bool
     use_c: bool
     run_multiple: bool
@@ -76,7 +77,6 @@ class Config(BaseModel):
     colX: int
     colY: int
     numSkipHeaderLines: int
-
 
     vars_r: VarsRange
     vars_i: VarsRange
@@ -89,18 +89,17 @@ class Config(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # Allow arbitrary types like numpy.ndarray
-    
+
     def __init__(self, **data):
         super().__init__(**data)  # Initialize normally
 
         # If problem is a BoundaryLayer, scale variables by the depth of delta*
         if self.problem == ProblemType.BoundaryLayer:
-            scaling_factor = 1. / self.DELTASTAR
+            scaling_factor = 1.0 / self.DELTASTAR
             self.re *= scaling_factor
 
-            self.alpha *= scaling_factor
+            self.var *= scaling_factor
             self.beta *= scaling_factor
-            self.omega *= scaling_factor
 
             self.vars_r.min *= scaling_factor
             self.vars_r.max *= scaling_factor
@@ -108,11 +107,15 @@ class Config(BaseModel):
             self.vars_i.min *= scaling_factor
             self.vars_i.max *= scaling_factor
 
-        self.vars_range_r = np.linspace(self.vars_r.min, self.vars_r.max, self.vars_r.num).astype(np.float64)
-        self.vars_range_i = np.linspace(self.vars_i.min, self.vars_i.max, self.vars_i.num).astype(np.float64)
+        self.vars_range_r = np.linspace(
+            self.vars_r.min, self.vars_r.max, self.vars_r.num
+        ).astype(np.float64)
+        self.vars_range_i = np.linspace(
+            self.vars_i.min, self.vars_i.max, self.vars_i.num
+        ).astype(np.float64)
 
         if self.branch == Branch.Temporal:
-            if self.use_c and np.abs(self.alpha) > 1e-10:
+            if self.use_c and np.abs(self.var) > 1e-10:
                 self.plot_label = "c"
             else:
                 self.plot_label = "omega"
@@ -126,24 +129,25 @@ class Config(BaseModel):
             data = load(file)
 
         # Convert complex numbers
-        data["general"]["alpha"] = ComplexNumber(
-            **data["general"]["alpha"]
-        ).to_complex()
+        data["general"]["var"] = ComplexNumber(**data["general"]["var"]).to_complex()
         data["general"]["beta"] = ComplexNumber(**data["general"]["beta"]).to_complex()
-        data["general"]["omega"] = ComplexNumber(
-            **data["general"]["omega"]
-        ).to_complex()
 
         # flags
         data["flags"]["branch"] = Branch(data["flags"]["branch"])
         data["flags"]["problem"] = ProblemType(data["flags"]["problem"])
-        data["flags"]["fileWriteEigenvalues"] = Path(data["flags"]["fileWriteEigenvalues"])
+        data["flags"]["fileWriteEigenvalues"] = Path(
+            data["flags"]["fileWriteEigenvalues"]
+        )
 
         # flags for custom problems
-        data["customProblemFlags"]["filenameUprofile"] = Path(data["customProblemFlags"]["filenameUprofile"])
+        data["customProblemFlags"]["filenameUprofile"] = Path(
+            data["customProblemFlags"]["filenameUprofile"]
+        )
 
         # default plot limits values
-        default_plot_limits = PlotLimits.default(data["flags"]["branch"], data["flags"]["problem"])
+        default_plot_limits = PlotLimits.default(
+            data["flags"]["branch"], data["flags"]["problem"]
+        )
 
         # Flatten the structure for Pydantic
         parsed_data = {
@@ -152,13 +156,12 @@ class Config(BaseModel):
             **data["customProblemFlags"],
             "vars_r": VarsRange(**data["runMultipleFlags"]["vars_r"]),
             "vars_i": VarsRange(**data["runMultipleFlags"]["vars_i"]),
-            "plot_lims": PlotLimits(**data["plot"]["plot_lims"]) if "plot_lims" in data["plot"] else default_plot_limits,
+            "plot_lims": PlotLimits(**data["plot"]["plot_lims"])
+            if "plot_lims" in data["plot"]
+            else default_plot_limits,
             "vars_range_r": np.array([]),
             "vars_range_i": np.array([]),
             "plot_label": "",
         }
-        
-
 
         return cls(**parsed_data)  # Calls __init__, ensuring scaling if needed
-

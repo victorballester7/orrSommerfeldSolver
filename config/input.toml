@@ -1,9 +1,8 @@
 [general]
-n = 200 
+n = 200 # Number of polynomial for spectral approximation
 re = 1000 # Reynolds number
-alpha = {r = 0.7, i = 0.0}
-beta = {r = 0.0, i = 0.0}
-omega = {r = 0.0, i = 0.0}
+var = {r = 0.7, i = 0.0} # alpha (for temporal branch) or omega (for spatial branch)
+beta = {r = 0.0, i = 0.0} # spanwise wavenumber
 
 [flags]
 branch = "temporal" # Options are: "temporal" (fixed alpha, solves the eigenvalue problem for omega), "spatial" (fixed omega, solves the eigenvalue problem for alpha)

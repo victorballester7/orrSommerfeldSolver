@@ -1,5 +1,4 @@
 #include "../include/pp.hpp"
-#include <matplot/matplot.h>
 
 void PostProcess::rescaleEVector(const std::complex<double> &alpha) {
   // Rescale eigenvalues by the factor alpha
@@ -81,47 +80,47 @@ void PostProcess::writeToFile(const std::string &filename,
   file.close();
 }
 
-void PostProcess::plotSpectrum() {
-  using namespace matplot;
-  // auto theta = linspace(0, 1, 500);
-  // auto x = transform(
-  //     theta, [&](double theta) { return exp(theta) * sin(100 * theta); });
-  // auto y = transform(
-  //     theta, [&](double theta) { return exp(theta) * cos(100 * theta); });
+// void PostProcess::plotSpectrum() {
+//   using namespace matplot;
+//   // auto theta = linspace(0, 1, 500);
+//   // auto x = transform(
+//   //     theta, [&](double theta) { return exp(theta) * sin(100 * theta); });
+//   // auto y = transform(
+//   //     theta, [&](double theta) { return exp(theta) * cos(100 * theta); });
 
-  // auto s = scatter(x, y);
-  // s->marker_color("b");
-  // s->marker_face_color({0, .5, .5});
-  // At the beginning of your function
-  // show();
-  // Extract real and imaginary parts
-  std::vector<double> re, im;
-  for (const auto &eig : eigenvalues) {
-    re.push_back(eig.real()); // Real part
-    im.push_back(eig.imag()); // Imaginary part
-  }
+//   // auto s = scatter(x, y);
+//   // s->marker_color("b");
+//   // s->marker_face_color({0, .5, .5});
+//   // At the beginning of your function
+//   // show();
+//   // Extract real and imaginary parts
+//   std::vector<double> re, im;
+//   for (const auto &eig : eigenvalues) {
+//     re.push_back(eig.real()); // Real part
+//     im.push_back(eig.imag()); // Imaginary part
+//   }
 
-  // Create a scatter plot
-  // for (int i = 0; i < re.size(); i += chunk_size_points) {
-  //   auto re_aux = std::vector<double>(re.begin() + i,
-  //                         re.begin() + std::min(i + chunk_size_points,
-  //                         (int)re.size()));
-  //   auto im_aux = std::vector<double>(im.begin() + i,
-  //                         im.begin() + std::min(i + chunk_size_points,
-  //                         (int)im.size()));
-  //   auto s = scatter(re_aux, im_aux);
-  // }
+//   // Create a scatter plot
+//   // for (int i = 0; i < re.size(); i += chunk_size_points) {
+//   //   auto re_aux = std::vector<double>(re.begin() + i,
+//   //                         re.begin() + std::min(i + chunk_size_points,
+//   //                         (int)re.size()));
+//   //   auto im_aux = std::vector<double>(im.begin() + i,
+//   //                         im.begin() + std::min(i + chunk_size_points,
+//   //                         (int)im.size()));
+//   //   auto s = scatter(re_aux, im_aux);
+//   // }
 
-  auto s = scatter(re, im); // Plot with red color and size 10
-  s->marker_color("b");
-  s->marker_face_color({0, .5, .5});
+//   auto s = scatter(re, im); // Plot with red color and size 10
+//   s->marker_color("b");
+//   s->marker_face_color({0, .5, .5});
 
-  // add grid
-  grid(true);
+//   // add grid
+//   grid(true);
 
-  // Set axis limits
-  xlim({config.plot_lims.xmin, config.plot_lims.xmax});
-  ylim({config.plot_lims.ymin, config.plot_lims.ymax});
+//   // Set axis limits
+//   xlim({config.plot_lims.xmin, config.plot_lims.xmax});
+//   ylim({config.plot_lims.ymin, config.plot_lims.ymax});
 
-  show();
-}
+//   show();
+// }

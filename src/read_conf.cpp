@@ -12,32 +12,20 @@ bool Config::load(const std::string &filename) {
     const auto &general = tbl["general"];
     p = (uint)general["n"].value_or(0);
     re = general["re"].value_or(0.0);
-    alpha = parseComplex(general["alpha"]);
+    var = parseComplex(general["var"]);
     beta = parseComplex(general["beta"]);
-    omega = parseComplex(general["omega"]);
 
     // Flags
     const auto &flags = tbl["flags"];
-    branch = flags["branch"].value_or("");
-    if (!isValid(branch, branches)) {
-      std::cerr << "Invalid branch: " << branch
-        << ". Available options are: ";
-      for (const auto &b : branches) {
-        std::cerr << b << " ";
-      }
-      std::cerr << std::endl;
-      return false;
-    }
-    problem = flags["problem"].value_or("");
-    if (!isValid(problem, problems)) {
-      std::cerr << "Invalid problem: " << problem
-        << ". Available options are: ";
-      for (const auto &_p : problems) {
-        std::cerr << _p << " ";
-      }
-      std::cerr << std::endl;
-      return false;
-    }
+    std::string field = "branch";
+
+    branch = flags[field].value_or("");
+    isValidMessage(field, branch, branches);
+
+    field = "problem";
+    problem = flags[field].value_or("");
+    isValidMessage(field, problem, problems);
+
     filenameEigenvalues = flags["fileWriteEigenvalues"].value_or("");
     doPlot = flags["doPlot"].value_or(false);
     use_c = flags["use_c"].value_or(false);

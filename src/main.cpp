@@ -52,7 +52,7 @@ int main() {
         (config.vars_r.num == 1)
             ? 0
             : (config.vars_r.max - config.vars_r.min) / (config.vars_r.num - 1);
-    double dvar_i = 
+    double dvar_i =
         (config.vars_i.num == 1)
             ? 0
             : (config.vars_i.max - config.vars_i.min) / (config.vars_i.num - 1);
@@ -61,8 +61,10 @@ int main() {
         double var_r = config.vars_r.min + i * dvar_r;
         double var_i = config.vars_i.min + j * dvar_i;
         complex var(var_r, var_i);
-        complex var_print = (config.problem == PB_BOUNDARY_LAYER) ? (var * DELTASTAR_BLASIUS):var;
-        std::cout << "Running simulation for var = " << var_print  << std::endl;
+        complex var_print = (config.problem == PB_BOUNDARY_LAYER)
+                                ? (var * DELTASTAR_BLASIUS)
+                                : var;
+        std::cout << "Running simulation for var = " << var_print << std::endl;
         config.setVar(var);
         solver.setVar(var, config.branch);
         solver.buildMatrices(config.branch);
@@ -82,10 +84,9 @@ int main() {
     pp.writeToFile(config.filenameEigenvalues, vars);
 
   } else {
-    std::cout << "Running simulation for var = "
-              << (config.branch == BRANCH_TEMPORAL ? config.alpha
-                                                   : config.omega)
-              << std::endl;
+    std::cout << "Running simulation for "
+              << ((config.branch == BRANCH_TEMPORAL) ? "α = " : "ω = ")
+              << config.var << std::endl;
     std::cout << "Building matrices..." << std::endl;
 
     {

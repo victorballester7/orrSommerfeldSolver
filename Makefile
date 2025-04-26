@@ -65,4 +65,4 @@ clean:
 	@rm -rf $(BIN)/*.o $(BIN)/$(TARGET)
 
 run: all
-	@./$(BIN)/$(TARGET); python -m src.main
+	@./$(BIN)/$(TARGET); python src/main.py

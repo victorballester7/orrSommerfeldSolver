@@ -84,9 +84,8 @@ private:
   uint p;          // Polynomial degree
   uint dimVS;      // Dimension of the vector space of basis functions
   double re;       // Reynolds number
-  complex alpha;   // Wavenumber
+  complex var;   // Wavenumber
   complex beta;    // Wavenumber
-  complex omega;   // Frequency
   complex k2;      // Square of the wavenumber
   double jacobian; // Jacobian of the mapping [a, b] -> [-1, 1]
 
@@ -154,8 +153,8 @@ private:
 
 public:
   OSSolver(Config &config)
-      : p(config.p), re(config.re), alpha(config.alpha), beta(config.beta),
-        omega(config.omega), k2(config.k2) {
+      : p(config.p), re(config.re), var(config.var), beta(config.beta),
+        k2(config.k2) {
 
     assert(p > 3); // Ensure polynomial degree is greater than 3
 
@@ -202,12 +201,10 @@ public:
     }
   }
 
-  void setVar(complex var, std::string branch) {
+  void setVar(complex var_, std::string branch) {
+    var = var_;
     if (branch == BRANCH_TEMPORAL) {
-      alpha = var;
-      k2 = alpha * alpha + beta * beta;
-    } else if (branch == BRANCH_SPATIAL) {
-      omega = var;
+      k2 = var * var + beta * beta;
     }
   }
 
