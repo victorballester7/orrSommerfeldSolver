@@ -62,8 +62,48 @@ def plotUprofile(conf: Config):
     plt.show()
 
 
-def plotEV(conf: Config):
-    re, im = readData(conf.fileWriteEigenvalues, 0, 1, 0)
+def getPertU(conf: Config, y, v_re, v_im):
+    v = v_re + 1j * v_im
+
+    diff_v = np.gradient(v, y)
+    u = diff_v / (1j * conf.var)
+
+    return u
+
+
+def plotEVector(conf: Config):
+    y, re_v = readData(conf.fileWriteEigenvector, 0, 1, 1)
+    y, im_v = readData(conf.fileWriteEigenvector, 0, 2, 1)
+
+    abs_v = np.sqrt(re_v**2 + im_v**2)
+
+    u = getPertU(conf, y, re_v, im_v)
+
+    abs_u = np.sqrt(u.real**2 + u.imag**2)
+
+    if conf.problem == ProblemType.BoundaryLayer:
+        y = y / conf.DELTASTAR
+
+    plt.plot(re_v, y, linestyle="dashed", label="Re(v)", alpha=0.4)
+    plt.plot(im_v, y, linestyle="dotted", label="Im(v)", alpha=0.4)
+    plt.plot(u.real, y, linestyle="dashed", label="Re(u)", alpha=0.4)
+    plt.plot(u.imag, y, linestyle="dotted", label="Im(u)", alpha=0.4)
+    plt.plot(abs_v, y, label="|v|")
+    plt.plot(abs_u, y, label="|u|")
+    plt.xlabel("v")
+    plt.ylabel("y")
+    if conf.problem == ProblemType.BoundaryLayer or conf.problem == ProblemType.Custom:
+        plt.ylim(0, 20)
+
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    return
+
+
+def plotEValues(conf: Config):
+    re, im = readData(conf.fileWriteEigenvalues, 0, 1, 1)
     varlabel, plotlabel = getLabels(conf)
     if conf.problem == ProblemType.BoundaryLayer:
         conf.vars_range_r *= conf.DELTASTAR
@@ -121,10 +161,12 @@ def main():
 
     conf = Config.from_toml(CONFIG_FILE)
 
-    if conf.problem == ProblemType.Custom and conf.plotUprofile:
-        plotUprofile(conf)
+    if conf.doPlot:
+        if conf.problem == ProblemType.Custom and conf.plotUprofile:
+            plotUprofile(conf)
 
-    plotEV(conf)
+        plotEValues(conf)
+        plotEVector(conf)
 
 
 if __name__ == "__main__":

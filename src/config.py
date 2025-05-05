@@ -68,6 +68,7 @@ class Config(BaseModel):
     problem: ProblemType
 
     fileWriteEigenvalues: Path
+    fileWriteEigenvector: Path
     doPlot: bool
     use_c: bool
     run_multiple: bool
@@ -137,6 +138,9 @@ class Config(BaseModel):
         data["flags"]["problem"] = ProblemType(data["flags"]["problem"])
         data["flags"]["fileWriteEigenvalues"] = Path(
             data["flags"]["fileWriteEigenvalues"]
+        )
+        data["flags"]["fileWriteEigenvector"] = Path(
+            data["flags"]["fileWriteEigenvector"]
         )
 
         # flags for custom problems

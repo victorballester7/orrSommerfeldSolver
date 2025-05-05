@@ -1,27 +1,9 @@
-#include "../include/orr_sommerfeld.hpp"
+#include "../include/config.hpp"
 #include "../include/pp.hpp"
-#include "../include/read_conf.hpp"
+#include "../include/solver.hpp"
 #include <chrono>
 #include <cstdio>
 #include <iostream>
-
-std::vector<complex> runSim(OSSolver &solver, bool print = false) {
-  // Create and set up the solver
-  std::chrono::high_resolution_clock::time_point start, end;
-  if (print) {
-    // Solve the generalized eigenvalue problem
-    std::cout << "Solving the eigenvalue problem..." << std::endl;
-    start = std::chrono::high_resolution_clock::now();
-  }
-  std::vector<complex> eigenvalues = solver.solve();
-  if (print) {
-    end = std::chrono::high_resolution_clock::now();
-    printf("Solve time: %.2f seconds\n",
-           std::chrono::duration<double>(end - start).count());
-    // Placeholder for the actual simulation logic
-  }
-  return eigenvalues;
-}
 
 int main() {
   // Parameters - can be modified as needed
@@ -44,9 +26,10 @@ int main() {
          std::chrono::duration<double>(end0 - start0).count());
 
   std::vector<complex> eigenvalues;
+  Eigen::ComplexEigenSolver<Matrix> eig;
 
   if (config.run_multiple) {
-    std::vector<complex> ev_aux, vars;
+    std::vector<complex> vars;
     complex evmax;
     double dvar_r =
         (config.vars_r.num == 1)
@@ -56,6 +39,7 @@ int main() {
         (config.vars_i.num == 1)
             ? 0
             : (config.vars_i.max - config.vars_i.min) / (config.vars_i.num - 1);
+    std::string varLabel = config.getVarlabel();
     for (int i = 0; i < config.vars_r.num; i++) {
       for (int j = 0; j < config.vars_i.num; j++) {
         double var_r = config.vars_r.min + i * dvar_r;
@@ -64,12 +48,16 @@ int main() {
         complex var_print = (config.problem == PB_BOUNDARY_LAYER)
                                 ? (var * DELTASTAR_BLASIUS)
                                 : var;
-        std::cout << "Running simulation for var = " << var_print << std::endl;
+        complex beta_print = (config.problem == PB_BOUNDARY_LAYER)
+                                  ? (config.beta * DELTASTAR_BLASIUS)
+                                  : config.beta;
+        std::cout << "Running simulation for " << varLabel << " = " << var_print
+                  << ", β = " << beta_print << std::endl;
         config.setVar(var);
         solver.setVar(var, config.branch);
         solver.buildMatrices(config.branch);
-        ev_aux = runSim(solver);
-        PostProcess pp(config, ev_aux);
+        eig = solver.solve();
+        PostProcess pp(config, eig);
         evmax = pp.getMostUnstableEigenvalue();
         // std::cout << "Most unstable eigenvalue: " << evmax.real()
         //       << " + " << evmax.imag() << "i" << std::endl;
@@ -79,14 +67,20 @@ int main() {
       }
     }
     // Print the results
-    PostProcess pp(config, eigenvalues, false);
+    PostProcess pp(config, eigenvalues);
     // pp.plotSpectrum();
-    pp.writeToFile(config.filenameEigenvalues, vars);
+    pp.writeToFile(vars);
 
   } else {
-    std::cout << "Running simulation for "
-              << ((config.branch == BRANCH_TEMPORAL) ? "α = " : "ω = ")
-              << config.var << std::endl;
+    complex var_print = (config.problem == PB_BOUNDARY_LAYER)
+                            ? (config.var * DELTASTAR_BLASIUS)
+                            : config.var;
+    complex beta_print = (config.problem == PB_BOUNDARY_LAYER)
+                            ? (config.beta * DELTASTAR_BLASIUS)
+                            : config.beta;
+
+    std::cout << "Running simulation for " << config.getVarlabel() << " = "
+              << var_print << ", β = " << beta_print << std::endl;
     std::cout << "Building matrices..." << std::endl;
 
     {
@@ -99,12 +93,12 @@ int main() {
     {
       std::cout << "Running simulation..." << std::endl;
       auto start = std::chrono::high_resolution_clock::now();
-      eigenvalues = runSim(solver);
+      eig = solver.solve();
       auto end = std::chrono::high_resolution_clock::now();
       printf("Solve time: %.2f seconds\n",
              std::chrono::duration<double>(end - start).count());
     }
-    PostProcess pp(config, eigenvalues);
+    PostProcess pp(config, eig);
 
     // Print the results
     // pp.printSpectrum(eigenvalues);
@@ -115,7 +109,7 @@ int main() {
     std::cout << "Most unstable eigenvalue: " << mostUnstableEigenvalue.real()
               << " + " << mostUnstableEigenvalue.imag() << "i" << std::endl;
 
-    pp.writeToFile(config.filenameEigenvalues);
+    pp.writeToFile(solver);
     // if (config.doPlot) {
     //   pp.plotSpectrum();
     // }

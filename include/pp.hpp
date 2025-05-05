@@ -1,34 +1,50 @@
 #ifndef PP_HPP
 #define PP_HPP
 
-#include "read_conf.hpp"
+#include "config.hpp"
+#include "solver.hpp"
 #include <complex>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Eigenvalues>
 #include <vector>
+
+using complex = std::complex<double>;
+using Matrix = Eigen::MatrixXcd;
+using Vector = Eigen::VectorXcd;
 
 class PostProcess {
   Config &config;
-  std::vector<complex> &eigenvalues;
+  Eigen::ComplexEigenSolver<Matrix> *eig;
+  std::vector<complex> eigenvalues;
+  Matrix eigenvectors;
 
-  void rescaleEVector(const std::complex<double> &alpha);
+  std::complex<double> rescaleEV(const std::complex<double> &alpha,
+                                 const std::complex<double> &lambda) const;
+
+  complex getMostUnstableEigenvalueNotScaled() const;
+  Eigen::VectorXcd getMostUnstableEigenvector() const;
 
 public:
-  PostProcess(Config &_config, std::vector<complex> &_eigenvalues,
-              bool scaling = true)
-      : config(_config), eigenvalues(_eigenvalues) {
-    if (scaling && config.branch == BRANCH_TEMPORAL && config.use_c && abs(config.var) > 1e-10) {
-      rescaleEVector(config.var);
-    }
-  };
+  PostProcess(Config &_config, Eigen::ComplexEigenSolver<Matrix> &_eig)
+      : config(_config), eig(&_eig) {
 
-  complex getMostUnstableEigenvalue();
+    eigenvalues = std::vector<complex>(eig->eigenvalues().data(),
+                                       eig->eigenvalues().data() +
+                                           eig->eigenvalues().size());
+    eigenvectors = eig->eigenvectors();
+  }
+
+  PostProcess(Config &_config, std::vector<complex> &_eigenvalues)
+      : config(_config), eig(nullptr), eigenvalues(_eigenvalues) {
+  }
+  complex getMostUnstableEigenvalue() const;
 
   // Print the spectrum
-  void printSpectrum();
+  void printSpectrum() const;
 
   // Write the spectrum to a file
-  void writeToFile(const std::string &filename);
-  void writeToFile(const std::string &filename,
-                              const std::vector<complex> &vars);
+  void writeToFile(const OSSolver &solver) const;
+  void writeToFile(const std::vector<complex> &vars) const;
   // Plot the spectrum
   // void plotSpectrum();
 };
