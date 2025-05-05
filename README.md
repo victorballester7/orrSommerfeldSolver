@@ -40,7 +40,7 @@ make run
 
 ### Poiseuille flow
 
-The Poiseulle flow is defined by a staeady state of the form: $u(y) = 1 - y^2$, with $y \in [-1, 1]$. The eigenvalues $c = \omega/\alpha$ from the dispersive relation are plotted below in the case $\alpha = 1$, $\beta = 0$ and $\text{Re} = 10000$.
+The Poiseulle flow is defined by a staeady state of the form: $`u(y) = 1 - y^2`$, with $`y \in [-1, 1]`$. The eigenvalues $`c = \omega/\alpha`$ from the dispersive relation are plotted below in the case $`\alpha = 1`$, $`\beta = 0`$ and $`\text{Re} = 10000`$.
 
 ![evals_Poiseuille](images/evals_P_a1.0_Re10000.png)
 
