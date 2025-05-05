@@ -40,7 +40,7 @@ make run
 
 ### Poiseuille flow
 
-The Poiseulle flow is defined by a staeady state of the form: $`u(y) = 1 - y^2`$, with $`y \in [-1, 1]`$. The eigenvalues $`c = \omega/\alpha`$ from the dispersive relation are plotted below in the case $`\alpha = 1`$, $`\beta = 0`$ and $`\text{Re} = 10000`$.
+The Poiseuille flow is defined by the steady state u(y) = 1 − y², y ∈ [−1, 1]. The eigenvalues c = ω / α are plotted for α = 1, β = 0, Re = 10000.
 
 ![evals_Poiseuille](images/evals_P_a1.0_Re10000.png)
 
@@ -50,7 +50,7 @@ The eigenvector corresponding to the most unstable eigenvalue is:
 
 ### Couette flow
 
-The Couette flow is defined by a staeady state of the form: $u(y) = y$, with $y \in [-1, 1]$. The eigenvalues $c$ are plotted below in the case $\alpha = \beta = 1$ and $\text{Re} = 1000$.
+The Couette flow is defined by the steady state u(y) = y, y ∈ [−1, 1]. The eigenvalues c = ω / α are plotted for α = 1, β = 1, Re = 1000.
 
 ![evals_Couette](images/evals_C_a1.0_b1.0_Re1000.png)
 
@@ -60,7 +60,7 @@ The eigenvector corresponding to the most unstable eigenvalue is:
 
 ### Boundary Layer
 
-The laminar boundary layer profile is taken from the Blasius solution. The data of the solution (solved in the interval $\eta \in [0, 150]$) is stored in the file `data/blasius.dat`. The eigenvalues $c$ are plotted below in the case $\alpha = 0.2$, $\beta = 0$ and $\text{Re} = 500$.
+The laminar boundary layer profile is taken from the Blasius solution. The data of the solution (solved in the interval η ∈ [0, 150]) is stored in the file `data/blasius.dat`. The eigenvalues c = ω / α are plotted below in the case α = 0.2, β = 0 and Re = 500.
 
 ![evals_BoundaryLayer](images/evals_BL_a0.2_Re500.png)
 
