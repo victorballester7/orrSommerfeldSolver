@@ -1,22 +1,22 @@
 [general]
-n = 400 # Number of polynomial for spectral approximation
+n = 200 # Number of polynomial for spectral approximation
 re = 1000 # Reynolds number
-var = {r = 1.0, i = 0.0} # alpha (for temporal branch) or omega (for spatial branch)
-beta = {r = 1.0, i = 0.0} # spanwise wavenumber
+var = {r = 0.3, i = -0.15} # alpha (for temporal branch) or omega (for spatial branch)
+beta = {r = 0.0, i = 0.0} # spanwise wavenumber
 
 [flags]
 branch = "temporal" # Options are: "temporal" (fixed alpha, solves the eigenvalue problem for omega), "spatial" (fixed omega, solves the eigenvalue problem for alpha)
-problem = "BoundaryLayer" # Options are: "BoundaryLayer, "Poiseuille", "Couette", "Custom"
+problem = "Custom" # Options are: "BoundaryLayer, "Poiseuille", "Couette", "Custom"
 fileWriteEigenvalues = "data/eigenvalues.dat" # File to write the eigenvalues
 fileWriteEigenvector = "data/eigenvector.dat" # File to write the eigenvector corresponding to the maximum eigenvalue 
 doPlot = true # If true, the code will plot the eigenvalues
 use_c = true # When temporal branch is used, plot in terms of c instead of omega (omega = alpha * c), if alpha is not 0.
-run_multiple = false # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
+run_multiple = true # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
 
 # fill only when problem = "Custom"
 [customProblemFlags]
-# filenameUprofile = "/home/victor/Desktop/PhD/src/flatSurfaceRe1000IncNS/dns/oldSetups/08_changedformula_newUpperBC/data/points_x660_n2800.dat"
-filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/baseflow/dns/d4_w15/data/points_x600_n800.dat"
+filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/linearSolver_blowingSuction/d4_w15/sinBC/data/points_x12_n800.dat" # File with the U profile (x and U) to be used in the custom problem
+# filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/baseflow/dns/d4_w15/data/points_x600_n800.dat"
 plotUprofile = false # If true, the code will plot the U profile input.
 colX = 1 # Column of the x (actually y) coordinate in the file 
 colY = 2 # Column of the y (actually U) coordinate in the file
@@ -24,9 +24,9 @@ numSkipHeaderLines = 3 # Number of lines to skip at the beginning of the file
 
 # fill only when run_multiple = true
 [runMultipleFlags]
-vars_r = {min = 0.1, max = 0.2, num = 50} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
+vars_r = {min = 0.1, max = 0.5, num = 30} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
 vars_i = {min = 0.0, max = 0.0, num = 1} # Range of alpha_i values to run (for temporal branch) or omega_i values (for spatial branch)
 
 [plot]
-plot_lims = {xmin = -1.0, xmax = 1.0, ymin = -1.9, ymax = 0.1} # Limits of the plot
+plot_lims = {xmin = 0, xmax = 1.05, ymin = -0.2, ymax = 0.125} # Limits of the plot
 

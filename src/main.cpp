@@ -58,7 +58,8 @@ int main() {
         solver.buildMatrices(config.branch);
         eig = solver.solve();
         PostProcess pp(config, eig);
-        evmax = pp.getMostUnstableEigenvalue();
+        // pp.printSpectrum();
+        evmax = pp.getMostUnstableEigenvalueNotScaled();
         // std::cout << "Most unstable eigenvalue: " << evmax.real()
         //       << " + " << evmax.imag() << "i" << std::endl;
 

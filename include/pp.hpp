@@ -21,7 +21,6 @@ class PostProcess {
   std::complex<double> rescaleEV(const std::complex<double> &alpha,
                                  const std::complex<double> &lambda) const;
 
-  complex getMostUnstableEigenvalueNotScaled() const;
   Eigen::VectorXcd getMostUnstableEigenvector() const;
 
 public:
@@ -35,9 +34,9 @@ public:
   }
 
   PostProcess(Config &_config, std::vector<complex> &_eigenvalues)
-      : config(_config), eig(nullptr), eigenvalues(_eigenvalues) {
-  }
+      : config(_config), eig(nullptr), eigenvalues(_eigenvalues) {}
   complex getMostUnstableEigenvalue() const;
+  complex getMostUnstableEigenvalueNotScaled() const;
 
   // Print the spectrum
   void printSpectrum() const;
