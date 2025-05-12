@@ -59,34 +59,39 @@ class PlotLimits(BaseModel):
 class Config(BaseModel):
     DELTASTAR: Final[float] = 1.7207876573
 
+    # params
     n: int
     re: float
-    var: complex
     beta: complex
 
+    # single run
+    var: complex
+
+    # multiple run
+    vars_r: VarsRange
+    vars_i: VarsRange
+    vars_range_r: npt.NDArray[np.float64]
+    vars_range_i: npt.NDArray[np.float64]
+
+    # flags
     branch: Branch
     problem: ProblemType
-
     fileWriteEigenvalues: Path
     fileWriteEigenvector: Path
     doPlot: bool
     use_c: bool
-    run_multiple: bool
+    multipleRun: bool
 
+    # custom problem flags
     filenameUprofile: Path
     plotUprofile: bool
     colX: int
     colY: int
     numSkipHeaderLines: int
 
-    vars_r: VarsRange
-    vars_i: VarsRange
-
-    vars_range_r: npt.NDArray[np.float64]
-    vars_range_i: npt.NDArray[np.float64]
-
-    plot_lims: PlotLimits
-    plot_label: str
+    # plot
+    plotLims: PlotLimits
+    plotLabel: str
 
     class Config:
         arbitrary_types_allowed = True  # Allow arbitrary types like numpy.ndarray
@@ -117,11 +122,11 @@ class Config(BaseModel):
 
         if self.branch == Branch.Temporal:
             if self.use_c and np.abs(self.var) > 1e-10:
-                self.plot_label = "c"
+                self.plotLabel = "c"
             else:
-                self.plot_label = "omega"
+                self.plotLabel = "omega"
         else:
-            self.plot_label = "alpha"
+            self.plotLabel = "alpha"
 
     @classmethod
     def from_toml(cls, file_path: str) -> "Config":
@@ -130,8 +135,8 @@ class Config(BaseModel):
             data = load(file)
 
         # Convert complex numbers
-        data["general"]["var"] = ComplexNumber(**data["general"]["var"]).to_complex()
-        data["general"]["beta"] = ComplexNumber(**data["general"]["beta"]).to_complex()
+        data["singleRunParams"]["var"] = ComplexNumber(**data["singleRunParams"]["var"]).to_complex()
+        data["params"]["beta"] = ComplexNumber(**data["params"]["beta"]).to_complex()
 
         # flags
         data["flags"]["branch"] = Branch(data["flags"]["branch"])
@@ -155,17 +160,18 @@ class Config(BaseModel):
 
         # Flatten the structure for Pydantic
         parsed_data = {
-            **data["general"],
+            **data["params"],
+            **data["singleRunParams"],
             **data["flags"],
             **data["customProblemFlags"],
-            "vars_r": VarsRange(**data["runMultipleFlags"]["vars_r"]),
-            "vars_i": VarsRange(**data["runMultipleFlags"]["vars_i"]),
-            "plot_lims": PlotLimits(**data["plot"]["plot_lims"])
-            if "plot_lims" in data["plot"]
+            "vars_r": VarsRange(**data["multipleRunParams"]["vars_r"]),
+            "vars_i": VarsRange(**data["multipleRunParams"]["vars_i"]),
+            "plotLims": PlotLimits(**data["plot"]["plotLims"])
+            if "plotLims" in data["plot"]
             else default_plot_limits,
             "vars_range_r": np.array([]),
             "vars_range_i": np.array([]),
-            "plot_label": "",
+            "plotLabel": "",
         }
 
         return cls(**parsed_data)  # Calls __init__, ensuring scaling if needed

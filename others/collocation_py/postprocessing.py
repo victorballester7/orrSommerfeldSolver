@@ -112,7 +112,7 @@ def postprocess(
         eigs: npt.NDArray[np.complex128], config: Config) -> None: 
     maxEVs = 10
     printEVSorted(eigs, maxEVs, config.problem, config.branch)
-    plotSpectrum(eigs, config.plot_label, config.plot_lims)
+    plotSpectrum(eigs, config.plotLabel, config.plotLims)
     # u, v, w = getPerturbation(max_vv, max_eig, var, beta, D1)
     # plotEVector(y_cheb, u, v)
     return

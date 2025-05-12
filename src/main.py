@@ -109,7 +109,7 @@ def plotEValues(conf: Config):
         conf.vars_range_r *= conf.DELTASTAR
         conf.vars_range_i *= conf.DELTASTAR
 
-    if conf.run_multiple:
+    if conf.multipleRun:
         # plot all the points with same imaginary part with same color
         # check how many different imaginary parts are there
 
@@ -136,12 +136,12 @@ def plotEValues(conf: Config):
             )
 
             plt.colorbar(sc, label=f"Re({varlabel})")
-        plt.xlim(conf.plot_lims.xmin, conf.plot_lims.xmax)
-        plt.ylim(conf.plot_lims.ymin, conf.plot_lims.ymax)
+        plt.xlim(conf.plotLims.xmin, conf.plotLims.xmax)
+        plt.ylim(conf.plotLims.ymin, conf.plotLims.ymax)
     else:
         plt.scatter(re, im, label="Eigenvalues", alpha=0.7)
-        plt.xlim(conf.plot_lims.xmin, conf.plot_lims.xmax)
-        plt.ylim(conf.plot_lims.ymin, conf.plot_lims.ymax)
+        plt.xlim(conf.plotLims.xmin, conf.plotLims.xmax)
+        plt.ylim(conf.plotLims.ymin, conf.plotLims.ymax)
 
     plt.xlabel(f"Re({plotlabel})")
     plt.ylabel(f"Im({plotlabel})")
@@ -166,7 +166,8 @@ def main():
             plotUprofile(conf)
 
         plotEValues(conf)
-        plotEVector(conf)
+        if not conf.multipleRun:
+            plotEVector(conf)
 
 
 if __name__ == "__main__":

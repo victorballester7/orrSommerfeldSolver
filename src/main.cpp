@@ -28,7 +28,7 @@ int main() {
   std::vector<complex> eigenvalues;
   Eigen::ComplexEigenSolver<Matrix> eig;
 
-  if (config.run_multiple) {
+  if (config.multipleRun) {
     std::vector<complex> vars;
     complex evmax;
     double dvar_r =

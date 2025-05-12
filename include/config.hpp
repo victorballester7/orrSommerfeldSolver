@@ -52,7 +52,7 @@ public:
   std::string filenameEigenvector;
   bool doPlot;
   bool use_c;
-  bool run_multiple;
+  bool multipleRun;
 
   // Custom problem flags
   std::string filenameUprofile;
@@ -64,7 +64,7 @@ public:
   Range vars_i;
 
   // Plot
-  PlotLims plot_lims;
+  PlotLims plotLims;
 
   // Load config from TOML file
   bool load(const std::string &filename);

@@ -13,7 +13,7 @@ def main():
 
     config = Config.from_toml(CONFIG_FILE)
 
-    if config.run_multiple:
+    if config.multipleRun:
         max_eigs = []
         for i, var_i in enumerate(config.vars_range_i):
             aux = []
@@ -50,8 +50,8 @@ def main():
 
         print("alphas_r", config.vars_range_r)
         print("alphas_i", config.vars_range_i)
-        plt.xlabel(config.plot_label + "_r")
-        plt.ylabel(config.plot_label + "_i")
+        plt.xlabel(config.plotLabel + "_r")
+        plt.ylabel(config.plotLabel + "_i")
         plt.legend()
         plt.grid()
         plt.show()
