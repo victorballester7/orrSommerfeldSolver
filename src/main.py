@@ -58,6 +58,7 @@ def plotUprofile(conf: Config):
     ax.set_ylabel("y")
     ax.set_xlabel("U")
     ax.legend()
+    ax.grid()
 
     plt.show()
 
@@ -136,8 +137,13 @@ def plotEValues(conf: Config):
             )
 
             plt.colorbar(sc, label=f"Re({varlabel})")
+            imax = np.argmax(im)
+            print(f"{plotlabel}_i_max = {im[imax]:.6f}")
+            print(f"{plotlabel}_r_max = {re[imax]:.6f}")
+            print(f"{varlabel}_r_max = {conf.vars_range_r[imax]:.6f}")
         plt.xlim(conf.plotLims.xmin, conf.plotLims.xmax)
         plt.ylim(conf.plotLims.ymin, conf.plotLims.ymax)
+
     else:
         plt.scatter(re, im, label="Eigenvalues", alpha=0.7)
         plt.xlim(conf.plotLims.xmin, conf.plotLims.xmax)

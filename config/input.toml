@@ -4,25 +4,25 @@ re = 1000 # Reynolds number
 beta = {r = 0.0, i = 0.0} # spanwise wavenumber
 
 [singleRunParams]
-var = {r = 0.3, i = -0.15} # alpha (for temporal branch) or omega (for spatial branch)
+var = {r = 0.125, i = 0.0} # alpha (for temporal branch) or omega (for spatial branch)
 
 # fill only when run_multiple = true
 [multipleRunParams]
-vars_r = {min = 0.5, max = 1.9, num = 30} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
-vars_i = {min = -4.27, max = 0.0, num = 5} # Range of alpha_i values to run (for temporal branch) or omega_i values (for spatial branch)
+vars_r = {min = 0.05, max = 0.4, num = 50} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
+vars_i = {min = 0.0, max = 0.0, num = 1} # Range of alpha_i values to run (for temporal branch) or omega_i values (for spatial branch)
 
 [flags]
 branch = "temporal" # Options are: "temporal" (fixed alpha, solves the eigenvalue problem for omega), "spatial" (fixed omega, solves the eigenvalue problem for alpha)
 problem = "Custom" # Options are: "BoundaryLayer, "Poiseuille", "Couette", "Custom"
 fileWriteEigenvalues = "data/eigenvalues.dat" # File to write the eigenvalues
 fileWriteEigenvector = "data/eigenvector.dat" # File to write the eigenvector corresponding to the maximum eigenvalue 
-doPlot = true # If true, the code will plot the eigenvalues
+doPlot = false # If true, the code will plot the eigenvalues
 use_c = false # When temporal branch is used, plot in terms of c instead of omega (omega = alpha * c), if alpha is not 0.
-multipleRun = false # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
+multipleRun = true # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
 
 # fill only when problem = "Custom"
 [customProblemFlags]
-filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/linearSolver_blowingSuction/d4_w15/sinBC/data/points_x13_n800.dat" # File with the U profile (x and U) to be used in the custom problem
+filenameUprofile = "/home/victor/Desktop/PhD/src/flatSurfaceRe1000IncNS/linearSolver_blowingSuction/data/points_x1000_n800.dat" # File with the U profile (x and U) to be used in the custom problem
 # filenameUprofile = "/home/victor/Desktop/PhD/src/boeingGapRe1000IncNS/baseflow/dns/d4_w15/data/points_x600_n800.dat"
 plotUprofile = false # If true, the code will plot the U profile input.
 colX = 1 # Column of the x (actually y) coordinate in the file 
@@ -30,5 +30,5 @@ colY = 2 # Column of the y (actually U) coordinate in the file
 numSkipHeaderLines = 3 # Number of lines to skip at the beginning of the file
 
 [plot]
-plotLims = {xmin = 0, xmax = 1.05, ymin = -2.2, ymax = 0.125} # Limits of the plot
+plotLims = {xmin = 0, xmax = 0.2, ymin = -0.05, ymax = 0.05} # Limits of the plot
 

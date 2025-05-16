@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../include/EVproblem.h"
-#include "../include/misc.h"
+#include "include/EVproblem.h"
+#include "include/misc.h"
 
 #define d1map2(i) (d1map[i] * d1map[i])
 #define d1map3(i) (d1map[i] * d1map2(i))

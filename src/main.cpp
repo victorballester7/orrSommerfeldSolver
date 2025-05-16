@@ -107,6 +107,8 @@ int main() {
 
     // Print the most unstable eigenvalue
     complex mostUnstableEigenvalue = pp.getMostUnstableEigenvalue();
+    // more decimals
+    std::cout.precision(15);
     std::cout << "Most unstable eigenvalue: " << mostUnstableEigenvalue.real()
               << " + " << mostUnstableEigenvalue.imag() << "i" << std::endl;
 

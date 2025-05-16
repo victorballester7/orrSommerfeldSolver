@@ -6,31 +6,36 @@
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 std::complex<double>
+PostProcess::blasiusScaling(const std::complex<double> &lambda) const {
+  if (config.problem == PB_BOUNDARY_LAYER) {
+    // rescale quantities for Blasius flow because delta* is not 1, it is
+    // DELTASTAR_BLASIUS
+    return lambda * DELTASTAR_BLASIUS;
+  } else {
+    return lambda;
+  }
+}
+
+std::complex<double>
 PostProcess::rescaleEV(const std::complex<double> &alpha,
                        const std::complex<double> &lambda) const {
   // Rescale eigenvalue by the factor alpha
   double tol_alpha = 1e-10;
-  if (config.branch == BRANCH_TEMPORAL) {
-    if (abs(config.var) > tol_alpha) {
-      if (config.use_c)
-        return lambda / alpha; // lambda is omega
-      else
-        return lambda; // lambda is omega
-    } else {
-      return lambda; // lambda is already omega (we solve the equations for
-                     // omega)
-    }
+  if (config.branch == BRANCH_TEMPORAL && abs(config.var) > tol_alpha &&
+      config.use_c) {
+    return lambda / alpha; // lambda is omega, so we want c, which doesn't
+                           // need DELTASTAR rescaling
+  } else {
+    return blasiusScaling(lambda);
   }
-  // other cases
-  return lambda;
 }
 
 complex PostProcess::getMostUnstableEigenvalueNotScaled() const {
   // Find the eigenvalue with the largest imaginary part
   complex max_eigenvalue = eigenvalues[0];
   uint numEVexamine = 20;
-  // looks like the eigenvalue solver positions the target eigenvalue up in the
-  // list
+  // looks like the eigenvalue solver positions the target eigenvalue up in
+  // the list
   for (uint i = 0; i < numEVexamine; i++) {
     if (eigenvalues[i].imag() > max_eigenvalue.imag()) {
       max_eigenvalue = eigenvalues[i];
@@ -72,7 +77,8 @@ complex PostProcess::getMostUnstableEigenvalueNotScaled() const {
           //           << "i" << std::endl;
           max_eigenvalue = lambda;
         }
-        //   std::cout << "max_eigenvalue = " << max_eigenvalue.real() << " + "
+        //   std::cout << "max_eigenvalue = " << max_eigenvalue.real() << " +
+        //   "
         //             << max_eigenvalue.imag() << "i" << std::endl;
       }
     } else {
@@ -187,7 +193,7 @@ Eigen::VectorXcd PostProcess::getMostUnstableEigenvector() const {
         "Most unstable eigenvalue not found in eigenvalue list.");
   }
 
-  // Extract the corresponding eigenvector 
+  // Extract the corresponding eigenvector
   Eigen::VectorXcd vec = eigenvectors.col(index);
 
   return vec;
@@ -236,8 +242,8 @@ void PostProcess::writeToFile(const OSSolver &solver) const {
 
   file2 << "# y   Re(v)   Im(v)" << std::endl;
   for (uint i = 0; i < solver.numQuadPoints; i++) {
-    file2 << solver.getYPhysicalRegion(solver.gaussPoints[i]) << " " << eigenvector[i].real() << " "
-          << eigenvector[i].imag() << std::endl;
+    file2 << solver.getYPhysicalRegion(solver, i) << " "
+          << eigenvector[i].real() << " " << eigenvector[i].imag() << std::endl;
   }
 
   file2.close();

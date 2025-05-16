@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../include/EVproblem.h"
-#include "../include/misc.h"
+#include "include/EVproblem.h"
+#include "include/misc.h"
 
 void printVector(int d, double *v) {
   for (int i = 0; i < d; i++) {

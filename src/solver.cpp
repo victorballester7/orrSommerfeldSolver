@@ -12,15 +12,15 @@ using complex = std::complex<double>;
 using Matrix = Eigen::MatrixXcd;
 using Vector = Eigen::VectorXcd;
 
-#define T1ijk (gaussWeights[k] * d2N[i][k] * d2N[j][k])
-#define T2ijk (gaussWeights[k] * d2N[i][k] * N[j][k])
-#define T3ijk (gaussWeights[k] * N[i][k] * N[j][k])
-#define T4ijk (gaussWeights[k] * N[i][k] * d2U[k] * N[j][k])
-#define T5ijk (gaussWeights[k] * U[k] * d2N[i][k] * N[j][k])
-#define T6ijk (gaussWeights[k] * U[k] * N[i][k] * N[j][k])
-#define T7ijk (gaussWeights[k] * N[i][k] * dN[j][k])
-#define T8ijk (gaussWeights[k] * U[k] * dN[i][k] * d2N[j][k])
-#define T9ijk (gaussWeights[k] * U[k] * N[i][k] * dN[j][k])
+#define T1ijk (factor * d2N[i][k] * d2N[j][k])
+#define T2ijk (factor * d2N[i][k] * N[j][k])
+#define T3ijk (factor * N[i][k] * N[j][k])
+#define T4ijk (factor * N[i][k] * d2U[k] * N[j][k])
+#define T5ijk (factor * U[k] * d2N[i][k] * N[j][k])
+#define T6ijk (factor * U[k] * N[i][k] * N[j][k])
+#define T7ijk (factor * N[i][k] * dN[j][k])
+#define T8ijk (factor * U[k] * dN[i][k] * d2N[j][k])
+#define T9ijk (factor * U[k] * N[i][k] * dN[j][k])
 
 void CustomU::readFromFile(const std::string &filename,
                            std::vector<double> &xdata, uint colX,
@@ -109,60 +109,27 @@ std::vector<double> CustomU::diffData(const std::vector<double> &xdata,
                    (h1 - h0) / (h0 * h1) * ydata[i] +
                    h0 / (h1 * (h0 + h1)) * ydata[i + 1];
   }
-
-  // // 4th order centered difference for interior points
-  // for (uint i = 2; i < n - 2; i++) {
-  //   diff_data[i] =
-  //       (ydata[i - 2] - 8 * ydata[i - 1] + 8 * ydata[i + 1] - ydata[i + 2]) /
-  //       (12.0 * h);
-  // }
-
-  // // 4th order forward difference for the first element
-  // diff_data[0] = (-25 * ydata[0] + 48 * ydata[1] - 36 * ydata[2] +
-  //                 16 * ydata[3] - 3 * ydata[4]) /
-  //                (12.0 * h);
-
-  // // 4th order mixed difference for the second element
-  // diff_data[1] = (-3 * ydata[0] - 10 * ydata[1] + 18 * ydata[2] - 6 *
-  // ydata[3] +
-  //                 ydata[4]) /
-  //                (12.0 * h);
-
-  // // 4th order mixed difference for the penultimate element
-  // diff_data[n - 2] = (3 * ydata[n - 1] + 10 * ydata[n - 2] - 18 * ydata[n -
-  // 3] +
-  //                     6 * ydata[n - 4] - ydata[n - 5]) /
-  //                    (12.0 * h);
-
-  // // 4th order backward difference for the last element
-  // diff_data[n - 1] =
-  //     (25 * ydata[n - 1] - 48 * ydata[n - 2] + 36 * ydata[n - 3] -
-  //      16 * ydata[n - 4] + 3 * ydata[n - 5]) /
-  //     (12.0 * h);
-
-  // for (uint i = 0; i < ydata.size() - 1; i++) {
-  //   diff_data[i] = (ydata[i + 1] - ydata[i]) / (xdata[i + 1] - xdata[i]);
-  // }
-
   return diff_data;
 }
 
-double OSSolver::getYPhysicalRegion(double y_standard) const {
+double OSSolver::getYPhysicalRegion(const OSSolver &solver, uint i) const {
   // Map the flow profile from the standard region [-1, 1] to the physical
   // region [a, b]
-  return y_standard * (b - a) / 2.0 + (a + b) / 2.0;
+  return solver.Uprof->mapToPhysicalRegion(gaussPoints[i]);
 }
 
-void OSSolver::mapToStandardRegion(CustomU &Uprofile) {
+void OSSolver::mapToStandardRegion() {
   // Map the flow profile to the standard region [-1, 1]
-  a = Uprofile.x_data[0];
-  b = Uprofile.x_data[Uprofile.x_data.size() - 1];
+  CustomU *profile = dynamic_cast<CustomU *>(Uprof);
+  if (!profile) {
+    throw std::runtime_error("Uprofile is not of type CustomU");
+  }
 
-  for (uint i = 0; i < Uprofile.x_data.size(); i++) {
-    Uprofile.x_data[i] = 2.0 * (Uprofile.x_data[i] - a) / (b - a) - 1.0;
-    // Uprofile.u_data[i] = 2.0 * (Uprofile.u_data[i] - a) / (b - a) - 1.0;
-    // Uprofile.du_data[i] = 2.0 * (Uprofile.du_data[i] - a) / (b - a) - 1.0;
-    // Uprofile.d2u_data[i] = 2.0 * (Uprofile.d2u_data[i] - a) / (b - a) - 1.0;
+  a = profile->x_data[0];
+  b = profile->x_data[profile->x_data.size() - 1];
+
+  for (uint i = 0; i < profile->x_data.size(); i++) {
+    profile->x_data[i] = profile->mapToStandardRegion(profile->x_data[i]);
   }
 }
 
@@ -227,7 +194,7 @@ void OSSolver::setGaussPointsWeights() {
   }
 }
 
-void OSSolver::setFunctions(Uprofile &Uprofile) {
+void OSSolver::setFunctions() {
   N.resize(dimVS, std::vector<double>(numQuadPoints));
   dN.resize(dimVS, std::vector<double>(numQuadPoints));
   d2N.resize(dimVS, std::vector<double>(numQuadPoints));
@@ -239,11 +206,12 @@ void OSSolver::setFunctions(Uprofile &Uprofile) {
     for (uint j = 0; j < numQuadPoints; j++) {
       z = gaussPoints[j];
       N[i][j] = getN(i + 1, z);
-      dN[i][j] = getdN(i + 1, z) * jacobian;
-      d2N[i][j] = getd2N(i + 1, z) * jacobian * jacobian;
+      dN[i][j] = getdN(i + 1, z) * jacobian[j];
+      d2N[i][j] = getd2N(i + 1, z) * jacobian[j] * jacobian[j] +
+                  getdN(i + 1, z) * djacobian[j];
       if (i == 0) {
-        U[j] = Uprofile.getU(z);
-        d2U[j] = Uprofile.getd2U(z);
+        U[j] = Uprof->getU(z);
+        d2U[j] = Uprof->getd2U(z);
       }
     }
   }
@@ -259,6 +227,8 @@ complex OSSolver::Los(uint i, uint j) const {
 
   // Use Gauss quadrature for numerical integration
   for (uint k = 0; k < numQuadPoints; k++) {
+    double factor = gaussWeights[k] / jacobian[k];
+
     // T1: (D2N, D2N)
     T1ij += T1ijk;
 
@@ -279,9 +249,8 @@ complex OSSolver::Los(uint i, uint j) const {
   }
 
   // Combine terms according to equation (14)
-  return (T1ij - 2.0 * k2 * T2ij + k2 * k2 * T3ij + I * alpha * re * T4ij -
-          I * alpha * re * T5ij + I * alpha * k2 * re * T6ij) /
-         jacobian;
+  return T1ij - 2.0 * k2 * T2ij + k2 * k2 * T3ij + I * alpha * re * T4ij -
+         I * alpha * re * T5ij + I * alpha * k2 * re * T6ij;
 }
 
 complex OSSolver::M(uint i, uint j) const {
@@ -291,6 +260,7 @@ complex OSSolver::M(uint i, uint j) const {
 
   // Use Gauss quadrature for numerical integration
   for (uint k = 0; k < numQuadPoints; k++) {
+    double factor = gaussWeights[k] / jacobian[k];
     // T2: (D2N, N)
     T2ij += T2ijk;
 
@@ -301,7 +271,7 @@ complex OSSolver::M(uint i, uint j) const {
   // we solve for c = omega / alpha (in order to bettwer control the line
   // centered at one for blasius profile) except when alpha is 0, then we solve
   // for omega
-  return -1.0 * I * re * (T2ij - k2 * T3ij) / jacobian;
+  return -1.0 * I * re * (T2ij - k2 * T3ij);
 }
 
 complex OSSolver::R0(uint i, uint j) const {
@@ -312,6 +282,7 @@ complex OSSolver::R0(uint i, uint j) const {
   complex omega = var;
 
   for (uint k = 0; k < numQuadPoints; k++) {
+    double factor = gaussWeights[k] / jacobian[k];
     // T1: (D2N, D2N)
     T1ij += T1ijk;
 
@@ -322,9 +293,8 @@ complex OSSolver::R0(uint i, uint j) const {
     T3ij += T3ijk;
   }
 
-  return (-1. / re * T1ij + (2. / re * beta2 - I * omega) * T2ij +
-          (I * omega * beta2 - 1. / re * beta2 * beta2) * T3ij) /
-         jacobian;
+  return -1. / re * T1ij + (2. / re * beta2 - I * omega) * T2ij +
+         (I * omega * beta2 - 1. / re * beta2 * beta2) * T3ij;
 }
 
 complex OSSolver::R1(uint i, uint j) const {
@@ -336,6 +306,7 @@ complex OSSolver::R1(uint i, uint j) const {
   complex omega = var;
 
   for (uint k = 0; k < numQuadPoints; k++) {
+    double factor = gaussWeights[k] / jacobian[k];
     // T4: (U''N, N)
     T4ij += T4ijk;
 
@@ -352,9 +323,8 @@ complex OSSolver::R1(uint i, uint j) const {
     T8ij += T8ijk;
   }
 
-  return (-1. * I * T4ij + I * T5ij - I * beta2 * T6ij +
-          (2. * I * omega - 4. * beta2 / re) * T7ij - 4. / re * T8ij) /
-         jacobian;
+  return -1. * I * T4ij + I * T5ij - I * beta2 * T6ij +
+         (2. * I * omega - 4. * beta2 / re) * T7ij - 4. / re * T8ij;
 }
 
 complex OSSolver::R2(uint i, uint j) const {
@@ -363,6 +333,7 @@ complex OSSolver::R2(uint i, uint j) const {
   complex I = complex(0.0, 1.0);
 
   for (uint k = 0; k < numQuadPoints; k++) {
+    double factor = gaussWeights[k] / jacobian[k];
     // T2: (D2N, N)
     T2ij += T2ijk;
 
@@ -370,7 +341,7 @@ complex OSSolver::R2(uint i, uint j) const {
     T9ij += T9ijk;
   }
 
-  return (4. / re * T2ij + 2. * I * T9ij) / jacobian;
+  return 4. / re * T2ij + 2. * I * T9ij;
 }
 
 // Build the A and B matrices for the generalized eigenvalue problem
@@ -421,10 +392,9 @@ OSSolver::computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs) const {
 
 // Solve the generalized eigenvalue problem
 Eigen::ComplexEigenSolver<Matrix> OSSolver::solve() const {
-  // transpose 
+  // transpose
   Eigen::MatrixXcd A_transpose = A.transpose();
   Eigen::MatrixXcd B_transpose = B.transpose();
-  
 
   // invert matrix B
   Eigen::FullPivLU<Matrix> lu(B_transpose);

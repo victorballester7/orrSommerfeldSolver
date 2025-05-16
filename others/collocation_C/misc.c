@@ -1,4 +1,4 @@
-#include "../include/misc.h"
+#include "include/misc.h"
 
 #include <openblas/lapack.h>
 #include <stdio.h>
