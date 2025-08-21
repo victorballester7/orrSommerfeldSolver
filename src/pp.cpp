@@ -5,28 +5,27 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
-std::complex<double>
-PostProcess::blasiusScaling(const std::complex<double> &lambda) const {
-  if (config.problem == PB_BOUNDARY_LAYER) {
-    // rescale quantities for Blasius flow because delta* is not 1, it is
-    // DELTASTAR_BLASIUS
-    return lambda * DELTASTAR_BLASIUS;
-  } else {
-    return lambda;
-  }
-}
+// std::complex<double>
+// PostProcess::blasiusScaling(const std::complex<double> &lambda) const {
+//   if (config.problem == PB_BOUNDARY_LAYER) {
+//     // rescale quantities for Blasius flow because delta* is not 1, it is
+//     // DELTASTAR_BLASIUS
+//     return lambda * DELTASTAR_BLASIUS;
+//   } else {
+//     return lambda;
+//   }
+// }
 
 std::complex<double>
-PostProcess::rescaleEV(const std::complex<double> &alpha,
-                       const std::complex<double> &lambda) const {
+PostProcess::rescaleEV(const std::complex<double> &lambda) const {
   // Rescale eigenvalue by the factor alpha
   double tol_alpha = 1e-10;
   if (config.branch == BRANCH_TEMPORAL && abs(config.var) > tol_alpha &&
       config.use_c) {
-    return lambda / alpha; // lambda is omega, so we want c, which doesn't
-                           // need DELTASTAR rescaling
+    return lambda /
+           config.var; // lambda is omega (so config.var = alpha), so we want c
   } else {
-    return blasiusScaling(lambda);
+    return lambda;
   }
 }
 
@@ -36,11 +35,6 @@ complex PostProcess::getMostUnstableEigenvalueNotScaled() const {
   uint numEVexamine = 20;
   // looks like the eigenvalue solver positions the target eigenvalue up in
   // the list
-  for (uint i = 0; i < numEVexamine; i++) {
-    if (eigenvalues[i].imag() > max_eigenvalue.imag()) {
-      max_eigenvalue = eigenvalues[i];
-    }
-  }
   if (config.branch == BRANCH_TEMPORAL) {
     if (config.problem == PB_BOUNDARY_LAYER || config.problem == PB_CUSTOM) {
       double max_real = -1000;
@@ -81,6 +75,22 @@ complex PostProcess::getMostUnstableEigenvalueNotScaled() const {
         //   "
         //             << max_eigenvalue.imag() << "i" << std::endl;
       }
+    } else if (config.problem == PB_POISEUILLE) {
+      double mean_real = 0;
+      double tol_mean_real =
+          0.3; // it has to be 30% off the mean to be selected
+      for (uint i = 0; i < numEVexamine; i++) {
+        mean_real += eigenvalues[i].real();
+      }
+      mean_real /= numEVexamine;
+      for (uint i = 0; i < numEVexamine; i++) {
+        if (eigenvalues[i].imag() > max_eigenvalue.imag() &&
+            abs(eigenvalues[i].real() - mean_real) / mean_real >
+                tol_mean_real) {
+          max_eigenvalue = eigenvalues[i];
+        }
+      }
+
     } else {
       for (uint i = 0; i < numEVexamine; i++) {
         if (eigenvalues[i].imag() > max_eigenvalue.imag()) {
@@ -167,8 +177,7 @@ complex PostProcess::getMostUnstableEigenvalueNotScaled() const {
 }
 
 complex PostProcess::getMostUnstableEigenvalue() const {
-  complex max_eigenvalue =
-      rescaleEV(config.var, getMostUnstableEigenvalueNotScaled());
+  complex max_eigenvalue = rescaleEV(getMostUnstableEigenvalueNotScaled());
   // std::cout << "max_eigenvalue = " << max_eigenvalue.real() << " + "
   //           << max_eigenvalue.imag() << "i" << std::endl;
 
@@ -206,7 +215,7 @@ void PostProcess::printSpectrum() const {
   std::string evLabel = config.getEVlabel();
   for (const auto &lambda : eigenvalues) {
     if (count < LIMIT) { // Limit output to first 20 eigenvalues
-      auto lambda_scaled = rescaleEV(config.var, lambda);
+      auto lambda_scaled = rescaleEV(lambda);
       std::cout << evLabel << " = " << lambda_scaled.real() << " + "
                 << lambda_scaled.imag() << "i" << std::endl;
     }
@@ -225,7 +234,7 @@ void PostProcess::writeToFile(const OSSolver &solver) const {
   std::string evLabel = config.getEVlabel();
   file << "# Re(" << evLabel << ")   Im(" << evLabel << ")" << std::endl;
   for (const auto &lambda : eigenvalues) {
-    auto lambda_scaled = rescaleEV(config.var, lambda);
+    auto lambda_scaled = rescaleEV(lambda);
     file << lambda_scaled.real() << " " << lambda_scaled.imag() << std::endl;
   }
   file.close();
@@ -263,11 +272,8 @@ void PostProcess::writeToFile(const std::vector<complex> &var_complex) const {
   file << "# Re(" << evLabel << ")   Im(" << evLabel << ")   Re(" << varLabel
        << ")   Im(" << varLabel << ")" << std::endl;
   for (uint i = 0; i < eigenvalues.size(); i++) {
-    const auto &lambda = eigenvalues[i];
-    auto lambda_scaled = rescaleEV(config.var, lambda);
-    const auto &vars = var_complex[i];
-    file << lambda_scaled.real() << " " << lambda_scaled.imag() << " "
-         << vars.real() << " " << vars.imag() << std::endl;
+    file << eigenvalues[i].real() << " " << eigenvalues[i].imag() << " "
+         << var_complex[i].real() << " " << var_complex[i].imag() << std::endl;
   }
 
   file.close();

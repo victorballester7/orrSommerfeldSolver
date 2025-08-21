@@ -57,7 +57,7 @@ class PlotLimits(BaseModel):
 
 
 class Config(BaseModel):
-    DELTASTAR: Final[float] = 1.7207876573
+    # DELTASTAR_BLASIUS: Final[float] = 1.7207876573
 
     # params
     n: int
@@ -100,18 +100,18 @@ class Config(BaseModel):
         super().__init__(**data)  # Initialize normally
 
         # If problem is a BoundaryLayer, scale variables by the depth of delta*
-        if self.problem == ProblemType.BoundaryLayer:
-            scaling_factor = 1.0 / self.DELTASTAR
-            self.re *= scaling_factor
+        # if self.problem == ProblemType.BoundaryLayer:
+        #     scaling_factor = 1.0 / self.DELTASTAR_BLASIUS
+        #     self.re *= scaling_factor
 
-            self.var *= scaling_factor
-            self.beta *= scaling_factor
+        #     self.var *= scaling_factor
+        #     self.beta *= scaling_factor
 
-            self.vars_r.min *= scaling_factor
-            self.vars_r.max *= scaling_factor
+        #     self.vars_r.min *= scaling_factor
+        #     self.vars_r.max *= scaling_factor
 
-            self.vars_i.min *= scaling_factor
-            self.vars_i.max *= scaling_factor
+        #     self.vars_i.min *= scaling_factor
+        #     self.vars_i.max *= scaling_factor
 
         self.vars_range_r = np.linspace(
             self.vars_r.min, self.vars_r.max, self.vars_r.num

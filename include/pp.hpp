@@ -18,11 +18,10 @@ class PostProcess {
   std::vector<complex> eigenvalues;
   Matrix eigenvectors;
 
-  std::complex<double> rescaleEV(const std::complex<double> &alpha,
-                                 const std::complex<double> &lambda) const;
+  std::complex<double> rescaleEV(const std::complex<double> &lambda) const;
 
   Eigen::VectorXcd getMostUnstableEigenvector() const;
-  std::complex<double> blasiusScaling(const std::complex<double> &lambda) const;
+  // std::complex<double> blasiusScaling(const std::complex<double> &lambda) const;
 
 public:
   PostProcess(Config &_config, Eigen::ComplexEigenSolver<Matrix> &_eig)

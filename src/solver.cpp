@@ -293,7 +293,7 @@ complex OSSolver::R0(uint i, uint j) const {
     T3ij += T3ijk;
   }
 
-  return -1. / re * T1ij + (2. / re * beta2 - I * omega) * T2ij +
+  return 1. / re * T1ij - (2. / re * beta2 - I * omega) * T2ij -
          (I * omega * beta2 - 1. / re * beta2 * beta2) * T3ij;
 }
 
@@ -323,8 +323,8 @@ complex OSSolver::R1(uint i, uint j) const {
     T8ij += T8ijk;
   }
 
-  return -1. * I * T4ij + I * T5ij - I * beta2 * T6ij +
-         (2. * I * omega - 4. * beta2 / re) * T7ij - 4. / re * T8ij;
+  return 1. * I * T4ij - I * T5ij + I * beta2 * T6ij -
+         (2. * I * omega - 4. * beta2 / re) * T7ij + 4. / re * T8ij;
 }
 
 complex OSSolver::R2(uint i, uint j) const {
@@ -365,13 +365,13 @@ void OSSolver::buildMatricesSpatial() {
 
   for (uint i = 0; i < dimVS; i++) {
     for (uint j = 0; j < dimVS; j++) {
-      A(i, j) = R1(i, j);
-      A(i, j + dimVS) = R0(i, j);
+      A(i, j) = -R1(i, j);
+      A(i, j + dimVS) = -R0(i, j);
       B(i, j) = R2(i, j);
 
       if (i == j) {
-        A(i + dimVS, j) = 1.0;
-        B(i + dimVS, j + dimVS) = 1.0;
+        A(i + dimVS, i) = 1.0;
+        B(i + dimVS, i + dimVS) = 1.0;
       }
     }
   }
@@ -392,7 +392,7 @@ OSSolver::computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs) const {
 
 // Solve the generalized eigenvalue problem
 Eigen::ComplexEigenSolver<Matrix> OSSolver::solve() const {
-  // transpose
+  // transpose, because Eigen expects the matrix to be in column-major order
   Eigen::MatrixXcd A_transpose = A.transpose();
   Eigen::MatrixXcd B_transpose = B.transpose();
 

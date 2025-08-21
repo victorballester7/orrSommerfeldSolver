@@ -45,26 +45,22 @@ int main() {
         double var_r = config.vars_r.min + i * dvar_r;
         double var_i = config.vars_i.min + j * dvar_i;
         complex var(var_r, var_i);
-        complex var_print = (config.problem == PB_BOUNDARY_LAYER)
-                                ? (var * DELTASTAR_BLASIUS)
-                                : var;
-        complex beta_print = (config.problem == PB_BOUNDARY_LAYER)
-                                  ? (config.beta * DELTASTAR_BLASIUS)
-                                  : config.beta;
-        std::cout << "Running simulation for " << varLabel << " = " << var_print
-                  << ", β = " << beta_print << std::endl;
+        std::cout << "Running simulation for " << varLabel << " = " << var
+                  << ", β = " << config.beta << ", Re = " << config.re
+                  << std::endl;
         config.setVar(var);
         solver.setVar(var, config.branch);
         solver.buildMatrices(config.branch);
         eig = solver.solve();
         PostProcess pp(config, eig);
         // pp.printSpectrum();
-        evmax = pp.getMostUnstableEigenvalueNotScaled();
+        // evmax = pp.getMostUnstableEigenvalueNotScaled();
+        evmax = pp.getMostUnstableEigenvalue();
         // std::cout << "Most unstable eigenvalue: " << evmax.real()
         //       << " + " << evmax.imag() << "i" << std::endl;
 
         eigenvalues.push_back(evmax);
-        vars.push_back(var_print);
+        vars.push_back(var);
       }
     }
     // Print the results
@@ -73,15 +69,9 @@ int main() {
     pp.writeToFile(vars);
 
   } else {
-    complex var_print = (config.problem == PB_BOUNDARY_LAYER)
-                            ? (config.var * DELTASTAR_BLASIUS)
-                            : config.var;
-    complex beta_print = (config.problem == PB_BOUNDARY_LAYER)
-                            ? (config.beta * DELTASTAR_BLASIUS)
-                            : config.beta;
-
     std::cout << "Running simulation for " << config.getVarlabel() << " = "
-              << var_print << ", β = " << beta_print << std::endl;
+              << config.var << ", β = " << config.beta << ", Re = " << config.re
+              << std::endl;
     std::cout << "Building matrices..." << std::endl;
 
     {

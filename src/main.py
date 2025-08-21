@@ -82,8 +82,8 @@ def plotEVector(conf: Config):
 
     abs_u = np.sqrt(u.real**2 + u.imag**2)
 
-    if conf.problem == ProblemType.BoundaryLayer:
-        y = y / conf.DELTASTAR
+    # if conf.problem == ProblemType.BoundaryLayer:
+    #     y = y / conf.DELTASTAR_BLASIUS
 
     plt.plot(re_v, y, linestyle="dashed", label="Re(v)", alpha=0.4)
     plt.plot(im_v, y, linestyle="dotted", label="Im(v)", alpha=0.4)
@@ -91,6 +91,7 @@ def plotEVector(conf: Config):
     plt.plot(u.imag, y, linestyle="dotted", label="Im(u)", alpha=0.4)
     plt.plot(abs_v, y, label="|v|")
     plt.plot(abs_u, y, label="|u|")
+    plt.plot(np.sqrt(abs_u**2 + abs_v**2), y, label="sqrt(|u|^2 + |v|^2)", alpha=0.7)
     plt.xlabel("v")
     plt.ylabel("y")
     if conf.problem == ProblemType.BoundaryLayer or conf.problem == ProblemType.Custom:
@@ -106,9 +107,9 @@ def plotEVector(conf: Config):
 def plotEValues(conf: Config):
     re, im = readData(conf.fileWriteEigenvalues, 0, 1, 1)
     varlabel, plotlabel = getLabels(conf)
-    if conf.problem == ProblemType.BoundaryLayer:
-        conf.vars_range_r *= conf.DELTASTAR
-        conf.vars_range_i *= conf.DELTASTAR
+    # if conf.problem == ProblemType.BoundaryLayer:
+    #     conf.vars_range_r *= conf.DELTASTAR_BLASIUS
+    #     conf.vars_range_i *= conf.DELTASTAR_BLASIUS
 
     if conf.multipleRun:
         # plot all the points with same imaginary part with same color

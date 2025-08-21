@@ -52,7 +52,7 @@ bool Config::load(const std::string &filename) {
     plotLims = parsePlotLims(plot["plotLims"]);
 
     // rescale quantities for Blasius flow only
-    deltaStarRescaling();
+    // deltaStarRescaling();
 
     k2 = getK2();
 

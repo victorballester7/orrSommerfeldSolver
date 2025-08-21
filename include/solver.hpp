@@ -114,9 +114,9 @@ public:
     } else if (config.problem == PB_COUETTE) {
       Uprof = new Couette();
     } else if (config.problem == PB_BOUNDARY_LAYER) {
-      uint colX = 1;
-      uint colY = 2;
-      uint numSkipHeaderLines = 3;
+      uint colX = 0;
+      uint colY = 1;
+      uint numSkipHeaderLines = 2;
       Uprof =
           new CustomU("data/blasius.dat", colX, colY, numSkipHeaderLines);
     } else if (config.problem == PB_CUSTOM) {

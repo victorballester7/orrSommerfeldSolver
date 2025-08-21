@@ -18,7 +18,7 @@ constexpr const char *PB_BOUNDARY_LAYER = "BoundaryLayer";
 constexpr const char *PB_COUETTE = "Couette";
 constexpr const char *PB_CUSTOM = "Custom";
 
-#define DELTASTAR_BLASIUS 1.7207876573
+// #define DELTASTAR_BLASIUS 1.7207876573
 
 struct Range {
   double min;
@@ -81,21 +81,21 @@ public:
   std::string getEVlabel() const;
 
 private:
-  void deltaStarRescaling() {
-    if (problem == PB_BOUNDARY_LAYER) {
-      // rescale quantities for Blasius flow because delta* is not 1, it is
-      // DELTASTAR_BLASIUS
-      var = var / DELTASTAR_BLASIUS;
-      beta = beta / DELTASTAR_BLASIUS;
+  // void deltaStarRescaling() {
+  //   if (problem == PB_BOUNDARY_LAYER) {
+  //     // rescale quantities for Blasius flow because delta* is not 1, it is
+  //     // DELTASTAR_BLASIUS
+  //     var = var / DELTASTAR_BLASIUS;
+  //     beta = beta / DELTASTAR_BLASIUS;
 
-      vars_r.min = vars_r.min / DELTASTAR_BLASIUS;
-      vars_r.max = vars_r.max / DELTASTAR_BLASIUS;
-      vars_i.min = vars_i.min / DELTASTAR_BLASIUS;
-      vars_i.max = vars_i.max / DELTASTAR_BLASIUS;
+  //     vars_r.min = vars_r.min / DELTASTAR_BLASIUS;
+  //     vars_r.max = vars_r.max / DELTASTAR_BLASIUS;
+  //     vars_i.min = vars_i.min / DELTASTAR_BLASIUS;
+  //     vars_i.max = vars_i.max / DELTASTAR_BLASIUS;
 
-      re = re / DELTASTAR_BLASIUS;
-    }
-  }
+  //     re = re / DELTASTAR_BLASIUS;
+  //   }
+  // }
 
   complex parseComplex(const toml::node_view<toml::node> &node) const {
     complex c;
