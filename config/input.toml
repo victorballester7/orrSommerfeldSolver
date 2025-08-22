@@ -1,6 +1,6 @@
 [params]
 n = 175 # Number of polynomial for spectral approximation
-re = 1847 # Reynolds number
+re = 847 # Reynolds number
 beta = {r = 0.0, i = 0.0} # spanwise wavenumber
 
 [singleRunParams]

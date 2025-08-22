@@ -65,4 +65,4 @@ clean:
 	@rm -rf $(BIN)/*.o $(BIN)/$(TARGET)
 
 run: all
-	@./$(BIN)/$(TARGET); python src/main.py
+	@./$(BIN)/$(TARGET); uv run src/main.py
