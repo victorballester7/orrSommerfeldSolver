@@ -1,16 +1,29 @@
 #include "../include/solver.hpp"
 #include "../libs/fastgl.hpp"
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Eigenvalues>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 
 // Define complex number type
 using complex = std::complex<double>;
 using Matrix = Eigen::MatrixXcd;
 using Vector = Eigen::VectorXcd;
+using RealMatrix = Eigen::MatrixXd;
+using RealVector = Eigen::VectorXd;
+
+extern "C" {
+void zggev_(char *jobvl, char *jobvr, int *n, std::complex<double> *A, int *lda,
+            std::complex<double> *B, int *ldb, std::complex<double> *alpha,
+            std::complex<double> *beta, std::complex<double> *VL, int *ldvl,
+            std::complex<double> *VR, int *ldvr, std::complex<double> *work,
+            int *lwork, double *rwork, int *info);
+}
 
 #define T1ijk (factor * d2N[i][k] * d2N[j][k])
 #define T2ijk (factor * d2N[i][k] * N[j][k])
@@ -18,9 +31,9 @@ using Vector = Eigen::VectorXcd;
 #define T4ijk (factor * N[i][k] * d2U[k] * N[j][k])
 #define T5ijk (factor * U[k] * d2N[i][k] * N[j][k])
 #define T6ijk (factor * U[k] * N[i][k] * N[j][k])
-#define T7ijk (factor * N[i][k] * dN[j][k])
-#define T8ijk (factor * U[k] * dN[i][k] * d2N[j][k])
-#define T9ijk (factor * U[k] * N[i][k] * dN[j][k])
+#define T7ijk (factor * dN[i][k] * N[j][k])
+#define T8ijk (factor * U[k] * d2N[i][k] * dN[j][k])
+#define T9ijk (factor * U[k] * dN[i][k] * N[j][k])
 
 void CustomU::readFromFile(const std::string &filename,
                            std::vector<double> &xdata, uint colX,
@@ -65,15 +78,95 @@ void CustomU::readFromFile(const std::string &filename,
 
 double CustomU::interpolate(double z, const std::vector<double> &xdata,
                             const std::vector<double> &ydata) const {
-  // Implement interpolation logic here
-  // For simplicity, using linear interpolation
-  uint index = 0;
-  while (index < len_data - 1 && xdata[index] < z) {
-    index++;
+  if (xdata.size() < 2 || ydata.size() < 2 || xdata.size() != ydata.size()) {
+    throw std::invalid_argument(
+        "Interpolation requires at least two aligned data points.");
+  }
+  if (z <= xdata.front()) {
+    return ydata.front();
+  }
+  if (z >= xdata.back()) {
+    return ydata.back();
   }
 
-  double t = (xdata[index] - z) / (xdata[index] - xdata[index - 1]);
-  return ydata[index] - t * (ydata[index] - ydata[index - 1]);
+  auto upper = std::lower_bound(xdata.begin(), xdata.end(), z);
+  size_t index = static_cast<size_t>(std::distance(xdata.begin(), upper));
+  size_t index0 = index - 1;
+
+  double x0 = xdata[index0];
+  double x1 = xdata[index];
+  double y0 = ydata[index0];
+  double y1 = ydata[index];
+  double t = (z - x0) / (x1 - x0);
+  return y0 + t * (y1 - y0);
+}
+
+std::vector<double> CustomU::buildNaturalSplineSecondDerivatives(
+    const std::vector<double> &xdata, const std::vector<double> &ydata) const {
+  const size_t n = xdata.size();
+  if (n < 3 || ydata.size() != n) {
+    throw std::invalid_argument(
+        "Spline construction requires at least 3 aligned data points.");
+  }
+
+  std::vector<double> y2(n, 0.0);
+  std::vector<double> u(n, 0.0);
+
+  for (size_t i = 1; i < n - 1; ++i) {
+    const double hPrev = xdata[i] - xdata[i - 1];
+    const double hNext = xdata[i + 1] - xdata[i];
+    const double hTot = xdata[i + 1] - xdata[i - 1];
+    if (hPrev <= 0.0 || hNext <= 0.0 || hTot <= 0.0) {
+      throw std::invalid_argument(
+          "Spline construction requires strictly increasing x_data.");
+    }
+
+    const double sig = hPrev / hTot;
+    const double p = sig * y2[i - 1] + 2.0;
+    y2[i] = (sig - 1.0) / p;
+    const double dd = (ydata[i + 1] - ydata[i]) / hNext -
+                      (ydata[i] - ydata[i - 1]) / hPrev;
+    u[i] = (6.0 * dd / hTot - sig * u[i - 1]) / p;
+  }
+
+  for (size_t k = n - 1; k-- > 0;) {
+    y2[k] = y2[k] * y2[k + 1] + u[k];
+  }
+  return y2;
+}
+
+double CustomU::interpolateSpline(double z, const std::vector<double> &xdata,
+                                  const std::vector<double> &ydata,
+                                  const std::vector<double> &y2data) const {
+  if (xdata.size() < 3 || ydata.size() != xdata.size() ||
+      y2data.size() != xdata.size()) {
+    throw std::invalid_argument(
+        "Spline interpolation requires aligned x/y/y2 data with at least 3 "
+        "points.");
+  }
+
+  if (z <= xdata.front()) {
+    return ydata.front();
+  }
+  if (z >= xdata.back()) {
+    return ydata.back();
+  }
+
+  auto upper = std::lower_bound(xdata.begin(), xdata.end(), z);
+  size_t khi = static_cast<size_t>(std::distance(xdata.begin(), upper));
+  size_t klo = khi - 1;
+  const double h = xdata[khi] - xdata[klo];
+  if (h <= 0.0) {
+    throw std::invalid_argument(
+        "Spline interpolation requires strictly increasing x_data.");
+  }
+
+  const double wa = (xdata[khi] - z) / h;
+  const double wb = (z - xdata[klo]) / h;
+  return wa * ydata[klo] + wb * ydata[khi] +
+         ((wa * wa * wa - wa) * y2data[klo] +
+          (wb * wb * wb - wb) * y2data[khi]) *
+             (h * h) / 6.0;
 }
 
 std::vector<double> CustomU::diffData(const std::vector<double> &xdata,
@@ -131,6 +224,7 @@ void OSSolver::mapToStandardRegion() {
   for (uint i = 0; i < profile->x_data.size(); i++) {
     profile->x_data[i] = profile->mapToStandardRegion(profile->x_data[i]);
   }
+  profile->refreshInterpolationData();
 }
 
 // Evaluate Legendre polynomial of degree n at x using recursion formula
@@ -194,7 +288,7 @@ void OSSolver::setGaussPointsWeights() {
   }
 }
 
-void OSSolver::setFunctions() {
+void OSSolver::setArrays() {
   N.resize(dimVS, std::vector<double>(numQuadPoints));
   dN.resize(dimVS, std::vector<double>(numQuadPoints));
   d2N.resize(dimVS, std::vector<double>(numQuadPoints));
@@ -217,195 +311,168 @@ void OSSolver::setFunctions() {
   }
 }
 
-// Compute matrix entries using Gauss quadrature
-complex OSSolver::Los(uint i, uint j) const {
-  // Implementation based on equation (12) in the paper
-  complex T1ij = 0.0, T2ij = 0.0, T3ij = 0.0;
-  complex T4ij = 0.0, T5ij = 0.0, T6ij = 0.0;
-  complex I = complex(0.0, 1.0);
-  complex alpha = var;
+void OSSolver::buildIntegralBlocks() {
+  RealMatrix Nmat(dimVS, numQuadPoints);
+  RealMatrix dNmat(dimVS, numQuadPoints);
+  RealMatrix d2Nmat(dimVS, numQuadPoints);
+  RealVector weights(numQuadPoints);
+  RealVector weightsU(numQuadPoints);
+  RealVector weightsd2U(numQuadPoints);
 
-  // Use Gauss quadrature for numerical integration
-  for (uint k = 0; k < numQuadPoints; k++) {
-    double factor = gaussWeights[k] / jacobian[k];
-
-    // T1: (D2N, D2N)
-    T1ij += T1ijk;
-
-    // T2: (D2N, N)
-    T2ij += T2ijk;
-
-    // T3: (N, N)
-    T3ij += T3ijk;
-
-    // T4: (U''N, N)
-    T4ij += T4ijk;
-
-    // T5: (U D2N, N)
-    T5ij += T5ijk;
-
-    // T6: (U N, N)
-    T6ij += T6ijk;
+  for (uint i = 0; i < dimVS; ++i) {
+    for (uint k = 0; k < numQuadPoints; ++k) {
+      Nmat(i, k) = N[i][k];
+      dNmat(i, k) = dN[i][k];
+      d2Nmat(i, k) = d2N[i][k];
+    }
   }
 
-  // Combine terms according to equation (14)
-  return T1ij - 2.0 * k2 * T2ij + k2 * k2 * T3ij + I * alpha * re * T4ij -
-         I * alpha * re * T5ij + I * alpha * k2 * re * T6ij;
-}
-
-complex OSSolver::M(uint i, uint j) const {
-  // Implementation based on equation (15) in the paper
-  complex T2ij = 0.0, T3ij = 0.0;
-  complex I = complex(0.0, 1.0);
-
-  // Use Gauss quadrature for numerical integration
-  for (uint k = 0; k < numQuadPoints; k++) {
-    double factor = gaussWeights[k] / jacobian[k];
-    // T2: (D2N, N)
-    T2ij += T2ijk;
-
-    // T3: (N, N)
-    T3ij += T3ijk;
+  for (uint k = 0; k < numQuadPoints; ++k) {
+    const double w = gaussWeights[k] / jacobian[k];
+    weights(k) = w;
+    weightsU(k) = w * U[k];
+    weightsd2U(k) = w * d2U[k];
   }
 
-  // we solve for c = omega / alpha (in order to bettwer control the line
-  // centered at one for blasius profile) except when alpha is 0, then we solve
-  // for omega
-  return -1.0 * I * re * (T2ij - k2 * T3ij);
-}
+  const auto weightedProduct = [](const RealMatrix &lhs, const RealVector &w,
+                                  const RealMatrix &rhs) -> RealMatrix {
+    return (lhs.array().rowwise() * w.transpose().array()).matrix() *
+           rhs.transpose();
+  };
 
-complex OSSolver::R0(uint i, uint j) const {
-  // Implementation based on equation (16) in the paper
-  complex T1ij = 0.0, T2ij = 0.0, T3ij = 0.0;
-  complex I = complex(0.0, 1.0);
-  complex beta2 = beta * beta;
-  complex omega = var;
-
-  for (uint k = 0; k < numQuadPoints; k++) {
-    double factor = gaussWeights[k] / jacobian[k];
-    // T1: (D2N, D2N)
-    T1ij += T1ijk;
-
-    // T2: (D2N, N)
-    T2ij += T2ijk;
-
-    // T3: (N, N)
-    T3ij += T3ijk;
-  }
-
-  return 1. / re * T1ij - (2. / re * beta2 - I * omega) * T2ij -
-         (I * omega * beta2 - 1. / re * beta2 * beta2) * T3ij;
-}
-
-complex OSSolver::R1(uint i, uint j) const {
-  // Implementation based on equation (16) in the paper
-  complex T4ij = 0.0, T5ij = 0.0, T6ij = 0.0;
-  complex T7ij = 0.0, T8ij = 0.0;
-  complex I = complex(0.0, 1.0);
-  complex beta2 = beta * beta;
-  complex omega = var;
-
-  for (uint k = 0; k < numQuadPoints; k++) {
-    double factor = gaussWeights[k] / jacobian[k];
-    // T4: (U''N, N)
-    T4ij += T4ijk;
-
-    // T5: (U D2N, N)
-    T5ij += T5ijk;
-
-    // T6: (U N, N)
-    T6ij += T6ijk;
-
-    // T7: (N, DN)
-    T7ij += T7ijk;
-
-    // T8: (U D2N, DN)
-    T8ij += T8ijk;
-  }
-
-  return 1. * I * T4ij - I * T5ij + I * beta2 * T6ij -
-         (2. * I * omega - 4. * beta2 / re) * T7ij + 4. / re * T8ij;
-}
-
-complex OSSolver::R2(uint i, uint j) const {
-  // Implementation based on equation (16) in the paper
-  complex T2ij = 0.0, T9ij = 0.0;
-  complex I = complex(0.0, 1.0);
-
-  for (uint k = 0; k < numQuadPoints; k++) {
-    double factor = gaussWeights[k] / jacobian[k];
-    // T2: (D2N, N)
-    T2ij += T2ijk;
-
-    // T9: (U N, DN)
-    T9ij += T9ijk;
-  }
-
-  return 4. / re * T2ij + 2. * I * T9ij;
+  T1 = weightedProduct(d2Nmat, weights, d2Nmat).cast<complex>();
+  T2 = weightedProduct(d2Nmat, weights, Nmat).cast<complex>();
+  T3 = weightedProduct(Nmat, weights, Nmat).cast<complex>();
+  T4 = weightedProduct(Nmat, weightsd2U, Nmat).cast<complex>();
+  T5 = weightedProduct(d2Nmat, weightsU, Nmat).cast<complex>();
+  T6 = weightedProduct(Nmat, weightsU, Nmat).cast<complex>();
+  T7 = weightedProduct(dNmat, weights, Nmat).cast<complex>();
+  T8 = weightedProduct(d2Nmat, weightsU, dNmat).cast<complex>();
+  T9 = weightedProduct(dNmat, weightsU, Nmat).cast<complex>();
 }
 
 // Build the A and B matrices for the generalized eigenvalue problem
 void OSSolver::buildMatricesTemporal() {
-  A = Matrix::Zero(dimVS, dimVS);
-  B = Matrix::Zero(dimVS, dimVS);
+  const complex I(0.0, 1.0);
+  const complex alpha = var;
 
-  for (uint i = 0; i < dimVS; i++) {
-    for (uint j = 0; j < dimVS; j++) {
-      A(i, j) = Los(i, j);
-      B(i, j) = M(i, j);
-    }
-  }
+  A = T1 - 2.0 * k2 * T2 + k2 * k2 * T3 + I * alpha * re * T4 -
+      I * alpha * re * T5 + I * alpha * k2 * re * T6;
+  B = -I * re * (T2 - k2 * T3);
 }
+
 // Build the A and B matrices for the generalized eigenvalue problem
 void OSSolver::buildMatricesSpatial() {
-  uint dimMat = 2 * dimVS;
+  const complex I(0.0, 1.0);
+  const complex beta2 = beta * beta;
+  const complex omega = var;
+  const Eigen::Index dim = static_cast<Eigen::Index>(dimVS);
 
-  A = Matrix::Zero(dimMat, dimMat);
-  B = Matrix::Zero(dimMat, dimMat);
+  const Matrix R0m = 1.0 / re * T1 - (2.0 / re * beta2 - I * omega) * T2 -
+                     (I * omega * beta2 - 1.0 / re * beta2 * beta2) * T3;
+  const Matrix R1m =
+      I * T4 - I * T5 + I * beta2 * T6 -
+      (2.0 * I * omega - 4.0 * beta2 / re) * T7 + 4.0 / re * T8;
+  const Matrix R2m = 4.0 / re * T2 + 2.0 * I * T9;
 
-  for (uint i = 0; i < dimVS; i++) {
-    for (uint j = 0; j < dimVS; j++) {
-      A(i, j) = -R1(i, j);
-      A(i, j + dimVS) = -R0(i, j);
-      B(i, j) = R2(i, j);
+  A = Matrix::Zero(2 * dim, 2 * dim);
+  B = Matrix::Zero(2 * dim, 2 * dim);
 
-      if (i == j) {
-        A(i + dimVS, i) = 1.0;
-        B(i + dimVS, i + dimVS) = 1.0;
-      }
-    }
-  }
+  A.topLeftCorner(dim, dim) = -R1m;
+  A.topRightCorner(dim, dim) = -R0m;
+  B.topLeftCorner(dim, dim) = R2m;
+  A.bottomLeftCorner(dim, dim) = Matrix::Identity(dim, dim);
+  B.bottomRightCorner(dim, dim) = Matrix::Identity(dim, dim);
 }
 
 Eigen::VectorXcd
-OSSolver::computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs) const {
+OSSolver::computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs,
+                             std::string branch) const {
+  const Eigen::Index dim = static_cast<Eigen::Index>(dimVS);
+  const Eigen::Index expectedSize =
+      (branch == BRANCH_SPATIAL) ? 2 * dim : dim;
+  if (eigenvector_coeffs.size() < expectedSize) {
+    throw std::invalid_argument("Eigenvector coefficient size is inconsistent "
+                                "with the current branch.");
+  }
+  const Eigen::Index offset = (branch == BRANCH_SPATIAL) ? dim : 0;
+
   Eigen::VectorXcd eigenvector(numQuadPoints);
   for (uint j = 0; j < numQuadPoints; j++) {
     eigenvector[j] = 0.0;
     for (uint i = 0; i < dimVS; i++) {
-      eigenvector[j] += eigenvector_coeffs[i] * N[i][j];
+      const Eigen::Index coeffIndex = static_cast<Eigen::Index>(i) + offset;
+      eigenvector[j] += eigenvector_coeffs[coeffIndex] * N[i][j];
     }
   }
 
   return eigenvector;
 }
 
-// Solve the generalized eigenvalue problem
-Eigen::ComplexEigenSolver<Matrix> OSSolver::solve() const {
-  // transpose, because Eigen expects the matrix to be in column-major order
-  Eigen::MatrixXcd A_transpose = A.transpose();
-  Eigen::MatrixXcd B_transpose = B.transpose();
-
-  // invert matrix B
-  Eigen::FullPivLU<Matrix> lu(B_transpose);
-  Matrix B_inv = lu.inverse();
-  // B_inv * A
-  Matrix M = B_inv * A_transpose;
-  // Eigenvalue decomposition
-  Eigen::ComplexEigenSolver<Matrix> eig(M);
-  if (eig.info() != 0) {
-    throw std::runtime_error("Eigenvalue decomposition failed");
+// Solve Ax = lambda Bx using QZ (LAPACK zggev), avoiding explicit B^{-1}A.
+EigenSolution OSSolver::solve() const {
+  if (A.rows() != A.cols() || B.rows() != B.cols() || A.rows() != B.rows()) {
+    throw std::runtime_error("Generalized eigenvalue matrices must be square "
+                             "and have matching dimensions.");
   }
 
-  return eig;
+  const Eigen::Index nEigen = A.rows();
+  if (nEigen <= 0) {
+    throw std::runtime_error("Generalized eigenvalue problem has zero size.");
+  }
+  if (nEigen > static_cast<Eigen::Index>(std::numeric_limits<int>::max())) {
+    throw std::runtime_error("Generalized eigenvalue problem is too large for "
+                             "LAPACK integer interface.");
+  }
+
+  Matrix Awork = A;
+  Matrix Bwork = B;
+  Vector alphaVec(nEigen);
+  Vector betaVec(nEigen);
+  Matrix VR = Matrix::Zero(nEigen, nEigen); // Right eigenvectors (columns of VR)
+
+  char jobvl = 'N'; // No left eigenvectors needed
+  char jobvr = 'V'; // Compute right eigenvectors
+  int n = static_cast<int>(nEigen); 
+  int lda = n; // Leading dimension of A
+  int ldb = n; // Leading dimension of B
+  int ldvl = 1; // Leading dimension of VL (not used since jobvl = 'N')
+  int ldvr = n; // Leading dimension of VR
+  int info = 0; // Output info from zggev
+  int lwork = -1; // Workspace query, means "don’t solve yet—tell me how much workspace memory you need"
+  std::complex<double> workQuery = 0.0;
+  std::vector<double> rwork(static_cast<size_t>(8 * n), 0.0); // Real workspace for zggev
+
+  zggev_(&jobvl, &jobvr, &n, Awork.data(), &lda, Bwork.data(), &ldb,
+         alphaVec.data(), betaVec.data(), nullptr, &ldvl, VR.data(), &ldvr,
+         &workQuery, &lwork, rwork.data(), &info);
+  if (info != 0) {
+    throw std::runtime_error("LAPACK workspace query for generalized "
+                             "eigensolver failed.");
+  }
+
+  lwork = std::max(1, static_cast<int>(std::real(workQuery)));
+  std::vector<std::complex<double>> work(static_cast<size_t>(lwork), 0.0);
+  Awork = A;
+  Bwork = B;
+
+  zggev_(&jobvl, &jobvr, &n, Awork.data(), &lda, Bwork.data(), &ldb,
+         alphaVec.data(), betaVec.data(), nullptr, &ldvl, VR.data(), &ldvr,
+         work.data(), &lwork, rwork.data(), &info);
+  if (info != 0) {
+    throw std::runtime_error("LAPACK generalized eigensolver failed.");
+  }
+
+  Vector eigenvalues(nEigen);
+  const double betaTol = 1e-12;
+  for (Eigen::Index i = 0; i < nEigen; ++i) {
+    if (std::abs(betaVec[i]) <= betaTol) {
+      const double inf = std::numeric_limits<double>::infinity();
+      eigenvalues[i] = complex(inf, inf);
+    } else {
+      eigenvalues[i] = alphaVec[i] / betaVec[i];
+    }
+  }
+
+  return EigenSolution{eigenvalues, VR};
 }

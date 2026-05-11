@@ -1,4 +1,4 @@
-# Blasius solution at Re_deltaStar = 1000 (important for the v component, not for u) and using deltaStar = 1
+# Blasius solution at Re_deltaStar = 1000 (which is important for the v component, not for u) and using deltaStar = 1
 # y u v u_y u_yy
 0.0 -5.838866770675288e-27 5.105226016884352e-34 0.3320573362152292 9.851463918482415e-32
 0.01743387678827694 0.009961718225784805 1.2856499887027453e-07 0.3320570881256635 -2.4808946381428675e-05

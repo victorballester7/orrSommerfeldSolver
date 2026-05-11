@@ -41,6 +41,7 @@ public:
   complex var;
   complex beta;
   complex k2;
+  complex targetEV = complex(0.0, 0.0);
 
   // Flags
   std::string branch;
@@ -53,9 +54,11 @@ public:
   bool doPlot;
   bool use_c;
   bool multipleRun;
+  bool useTargetEV = false;
 
   // Custom problem flags
   std::string filenameUprofile;
+  bool blasiusLikeDomain;
   uint colX, colY;
   uint numSkipHeaderLines;
 
@@ -81,22 +84,6 @@ public:
   std::string getEVlabel() const;
 
 private:
-  // void deltaStarRescaling() {
-  //   if (problem == PB_BOUNDARY_LAYER) {
-  //     // rescale quantities for Blasius flow because delta* is not 1, it is
-  //     // DELTASTAR_BLASIUS
-  //     var = var / DELTASTAR_BLASIUS;
-  //     beta = beta / DELTASTAR_BLASIUS;
-
-  //     vars_r.min = vars_r.min / DELTASTAR_BLASIUS;
-  //     vars_r.max = vars_r.max / DELTASTAR_BLASIUS;
-  //     vars_i.min = vars_i.min / DELTASTAR_BLASIUS;
-  //     vars_i.max = vars_i.max / DELTASTAR_BLASIUS;
-
-  //     re = re / DELTASTAR_BLASIUS;
-  //   }
-  // }
-
   complex parseComplex(const toml::node_view<toml::node> &node) const {
     complex c;
     c.real(node["r"].value_or(0.0));

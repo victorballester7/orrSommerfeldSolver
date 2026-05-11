@@ -17,6 +17,8 @@ bool Config::load(const std::string &filename) {
     // single run
     const auto &singleRunParams = tbl["singleRunParams"];
     var = parseComplex(singleRunParams["var"]);
+    targetEV = parseComplex(singleRunParams["targetEV"]);
+    useTargetEV = singleRunParams["useTargetEV"].value_or(false);
 
     // multiple run
     const auto &multipleRunParams = tbl["multipleRunParams"];
@@ -43,16 +45,15 @@ bool Config::load(const std::string &filename) {
     // Custom problem flags
     const auto &customProblemFlags = tbl["customProblemFlags"];
     filenameUprofile = customProblemFlags["filenameUprofile"].value_or("");
+    blasiusLikeDomain = customProblemFlags["blasiusLikeDomain"].value_or(false);
     colX = static_cast<uint>(customProblemFlags["colX"].value_or(0));
     colY = static_cast<uint>(customProblemFlags["colY"].value_or(0));
     numSkipHeaderLines =
         static_cast<uint>(customProblemFlags["numSkipHeaderLines"].value_or(0));
+
     // Plot
     const auto &plot = tbl["plot"];
     plotLims = parsePlotLims(plot["plotLims"]);
-
-    // rescale quantities for Blasius flow only
-    // deltaStarRescaling();
 
     k2 = getK2();
 

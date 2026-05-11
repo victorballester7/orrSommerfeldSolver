@@ -3,14 +3,10 @@
 #include "../include/solver.hpp"
 #include <chrono>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 
 int main() {
-  // Parameters - can be modified as needed
-  // int p = 50;       // Polynomial degree (e.g., 100, 200, 500)
-  // double Re = 2000; // Reynolds number
-  // double alpha = 1;  // Wavenumber
-
   Config config;
   // Load configuration from TOML file
   if (!config.load("config/input.toml")) {
@@ -26,7 +22,7 @@ int main() {
          std::chrono::duration<double>(end0 - start0).count());
 
   std::vector<complex> eigenvalues;
-  Eigen::ComplexEigenSolver<Matrix> eig;
+  EigenSolution eig;
 
   if (config.multipleRun) {
     std::vector<complex> vars;
@@ -45,14 +41,21 @@ int main() {
         double var_r = config.vars_r.min + i * dvar_r;
         double var_i = config.vars_i.min + j * dvar_i;
         complex var(var_r, var_i);
-        std::cout << "Running simulation for " << varLabel << " = " << var
+        std::cout << std::fixed << std::setprecision(6)
+                  << "Running simulation for " << varLabel << " = " << var
                   << ", β = " << config.beta << ", Re = " << config.re
                   << std::endl;
         config.setVar(var);
+        std::cout << "config.var: " << config.var << std::endl;
+        std::cout << "config.k2: " << config.k2 << std::endl;
+        std::cout << "solver.var: " << solver.var << std::endl;
+        std::cout << "solver.k2: " << solver.k2 << std::endl;
         solver.setVar(var, config.branch);
+        std::cout << "solver.var: " << solver.var << std::endl;
+        std::cout << "solver.k2: " << solver.k2 << std::endl;
         solver.buildMatrices(config.branch);
         eig = solver.solve();
-        PostProcess pp(config, eig);
+        PostProcess pp(eig);
         // pp.printSpectrum();
         // evmax = pp.getMostUnstableEigenvalueNotScaled();
         evmax = pp.getMostUnstableEigenvalue();
@@ -64,17 +67,17 @@ int main() {
       }
     }
     // Print the results
-    PostProcess pp(config, eigenvalues);
+    PostProcess pp(eigenvalues);
     // pp.plotSpectrum();
     pp.writeToFile(vars);
 
   } else {
-    std::cout << "Running simulation for " << config.getVarlabel() << " = "
-              << config.var << ", β = " << config.beta << ", Re = " << config.re
-              << std::endl;
-    std::cout << "Building matrices..." << std::endl;
+    std::cout << std::fixed << std::setprecision(6) << "Running simulation for "
+              << config.getVarlabel() << " = " << config.var
+              << ", β = " << config.beta << ", Re = " << config.re << std::endl;
 
     {
+      std::cout << "Building matrices..." << std::endl;
       auto start = std::chrono::high_resolution_clock::now();
       solver.buildMatrices(config.branch);
       auto end = std::chrono::high_resolution_clock::now();
@@ -89,11 +92,12 @@ int main() {
       printf("Solve time: %.2f seconds\n",
              std::chrono::duration<double>(end - start).count());
     }
-    PostProcess pp(config, eig);
+    PostProcess pp(eig);
+
+    std::string evLabel = config.getEVlabel();
 
     // Print the results
-    // pp.printSpectrum(eigenvalues);
-    pp.printSpectrum();
+    pp.printSpectrum(evLabel);
 
     // Print the most unstable eigenvalue
     complex mostUnstableEigenvalue = pp.getMostUnstableEigenvalue();
@@ -102,10 +106,7 @@ int main() {
     std::cout << "Most unstable eigenvalue: " << mostUnstableEigenvalue.real()
               << " + " << mostUnstableEigenvalue.imag() << "i" << std::endl;
 
-    pp.writeToFile(solver);
-    // if (config.doPlot) {
-    //   pp.plotSpectrum();
-    // }
+    pp.writeToFile(evLabel, solver);
   }
 
   return 0;

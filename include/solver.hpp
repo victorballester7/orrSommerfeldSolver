@@ -13,14 +13,22 @@ using complex = std::complex<double>;
 using Matrix = Eigen::MatrixXcd;
 using Vector = Eigen::VectorXcd;
 
+struct EigenSolution {
+  Vector eigenvalues;
+  Matrix eigenvectors;
+};
+
 class OSSolver {
+public:
+  complex var; // Wavenumber (alpha for temporal, omega for spatial)
+  complex k2;
 private:
   uint p;          // Polynomial degree
   uint dimVS;      // Dimension of the vector space of basis functions
   double re;       // Reynolds number
-  complex var;     // Wavenumber
+  // complex var;     // Wavenumber
   complex beta;    // Wavenumber
-  complex k2;      // Square of the wavenumber
+  // complex k2;      // Square of the wavenumber
   double a = -1.0; // Left boundary of the physical region
   double b = 1.0;  // Right boundary of the physical region
 
@@ -40,6 +48,8 @@ private:
   // Matrices for the eigenvalue problem Ax = λBx
   Matrix A;
   Matrix B;
+  // Precomputed Galerkin inner-product blocks (independent of var)
+  Matrix T1, T2, T3, T4, T5, T6, T7, T8, T9;
 
   // Evaluate Legendre polynomial of degree n at x using recursion formula
   double getL(uint n, double x) const;
@@ -54,13 +64,18 @@ private:
   double getd2N(uint i, double z) const;
 
   // Determine the appropriate number of quadrature points
-  uint getNumQuadPoints() const {
+  uint getNumQuadPoints(const std::string &problem) const {
     // The basis function have degree p. At most we are multiplying
     // U * phi * phi
     // 2q - 1 = p + p + degU
     // q = p + (degU + 1) / 2
     // For Poiseuille degU = 2
-    return p + 2;
+    if (problem == PB_POISEUILLE || problem == PB_COUETTE) {
+      return p + 2;
+    }
+    // For non-polynomial/custom profiles (e.g. boundary layer), increase
+    // quadrature to reduce under-integration of U(y)-weighted products.
+    return 2 * p + 10;
   }
 
   void setGaussPointsWeights();
@@ -72,16 +87,8 @@ private:
 
   void mapToStandardRegion();
 
-  void setFunctions();
-
-  // Matrices for temporal branch
-  complex Los(uint i, uint j) const;
-  complex M(uint i, uint j) const;
-
-  // Matrices for spatial branch
-  complex R0(uint i, uint j) const;
-  complex R1(uint i, uint j) const;
-  complex R2(uint i, uint j) const;
+  void setArrays();
+  void buildIntegralBlocks();
 
   // Build the A and B matrices for the generalized eigenvalue problem
   void buildMatricesTemporal();
@@ -99,7 +106,7 @@ public:
     assert(p > 3); // Ensure polynomial degree is greater than 3
 
     // Determine appropriate number of quadrature points
-    numQuadPoints = getNumQuadPoints();
+    numQuadPoints = getNumQuadPoints(config.problem);
 
     // Initialize Gauss points and weights
     setGaussPointsWeights();
@@ -108,7 +115,6 @@ public:
     dimVS = getDimVectorSpace();
 
     // Initialize shape functions and their second derivatives
-
     if (config.problem == PB_POISEUILLE) {
       Uprof = new Poiseuille();
     } else if (config.problem == PB_COUETTE) {
@@ -117,11 +123,12 @@ public:
       uint colX = 0;
       uint colY = 1;
       uint numSkipHeaderLines = 2;
-      Uprof =
-          new CustomU("data/blasius.dat", colX, colY, numSkipHeaderLines);
+      bool useRationalMapping = true;
+      Uprof = new CustomU("data/blasius.dat", colX, colY, numSkipHeaderLines,
+                          useRationalMapping);
     } else if (config.problem == PB_CUSTOM) {
       Uprof = new CustomU(config.filenameUprofile, config.colX, config.colY,
-                             config.numSkipHeaderLines);
+                          config.numSkipHeaderLines, config.blasiusLikeDomain);
     } else {
       throw std::invalid_argument(
           "Invalid profile type or not enough arguments provided");
@@ -135,7 +142,8 @@ public:
       mapToStandardRegion();
     }
 
-    setFunctions();
+    setArrays();
+    buildIntegralBlocks();
   }
 
   double getYPhysicalRegion(const OSSolver &solver, uint i) const;
@@ -156,10 +164,11 @@ public:
   }
 
   Eigen::VectorXcd
-  computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs) const;
+  computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs,
+                     std::string branch) const;
 
   // Solve the generalized eigenvalue problem
-  Eigen::ComplexEigenSolver<Matrix> solve() const;
+  EigenSolution solve() const;
 };
 
 #endif // SOLVER_HPP

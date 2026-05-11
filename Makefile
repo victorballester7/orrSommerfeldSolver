@@ -6,7 +6,7 @@ CXXFLAGS := -Wall -Wextra -Wpedantic -Wshadow -Wformat=2 -Wcast-align -Wconversi
 CFLAGS := -Wall -Wextra -pedantic -Ofast
 
 # Libraries
-LIBS := -lm -lmatplot -lpthread
+LIBS := -llapack -lblas -lm -lpthread
 
 # Folders
 SRC := src
@@ -28,8 +28,8 @@ LIB_OBJECTS := $(patsubst $(LIB_DIR)/%.c, $(LIB_DIR)/%.o, $(filter %.c, $(SOURCE
                $(patsubst $(LIB_DIR)/%.cpp, $(LIB_DIR)/%.o, $(filter %.cpp, $(SOURCES_LIB)))
 
 # Headers
-HEADERS := $(wildcard $(INCLUDE)/*.h) $(wildcard $(INCLUDE)/*.hpp) \
-           $(wildcard $(LIB_DIR)/*.h) $(wildcard $(LIB_DIR)/*.hpp)
+HEADERS := $(wildcard include/*.h include/*.hpp) \
+           $(wildcard $(LIB_DIR)/*.h $(LIB_DIR)/*.hpp)
 
 # .PHONY target specifies that all and clean are not real files, but are just targets that don't produce output files.
 .PHONY: all clean build-libs
@@ -65,4 +65,4 @@ clean:
 	@rm -rf $(BIN)/*.o $(BIN)/$(TARGET)
 
 run: all
-	@./$(BIN)/$(TARGET); uv run src/main.py
+	@./$(BIN)/$(TARGET) && uv run src/main.py
