@@ -1,23 +1,23 @@
 [params]
-n = 500 # Number of polynomial for spectral approximation
+n = 200 # Number of polynomial for spectral approximation
 re = 1000 # Reynolds number
 beta = { r = 0.0, i = 0.0 } # spanwise wavenumber
 
 [singleRunParams]
-var = { r = 0.26, i = 0.0 }       # alpha (for temporal branch) or omega (for spatial branch)
+var = { r = 0.13105, i = 0.0 }       # alpha (for temporal branch) or omega (for spatial branch)
 useTargetEV = false # If true, select the eigenvalue/eigenvector closest to targetEV instead of using the instability heuristic.
 targetEV = { r = 0.3, i = 0.0 } # Target eigenvalue used only when useTargetEV = true (for spatial branch this is alpha).
 
 # fill only when run_multiple = true
 [multipleRunParams]
-vars_r = {min = 0.01, max = 0.5, num = 20} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
+vars_r = {min = 0.33, max = 0.37, num = 10} # Range of alpha_r values to run (for temporal branch) or omega_r values (for spatial branch)
 vars_i = {min = 0.0, max = 0.0, num = 1} # Range of alpha_i values to run (for temporal branch) or omega_i values (for spatial branch)
 
 [flags]
 branch = "spatial" # Options are: "temporal" (fixed alpha, solves the eigenvalue problem for omega), "spatial" (fixed omega, solves the eigenvalue problem for alpha)
 problem = "BoundaryLayer" # Options are: "BoundaryLayer, "Poiseuille", "Couette", "Custom"
 doPlot = true # If true, the code will plot the eigenvalues
-use_c = true # When temporal branch is used, plot in terms of c instead of omega (omega = alpha * c), if alpha is not 0.
+use_c = false # When temporal branch is used, plot in terms of c instead of omega (omega = alpha * c), if alpha is not 0.
 multipleRun = false # If true, the code will run multiple cases with different alpha and omega, check the [runMultipleFlags] section
 
 # fill only when problem = "Custom"
@@ -31,4 +31,4 @@ colY = 2               # Column of the y (actually U) coordinate in the file
 numSkipHeaderLines = 3 # Number of lines to skip at the beginning of the file
 
 [plot]
-plotLims = { xmin = -1, xmax = 1.1, ymin = -1, ymax = 1.15 } # Limits of the plot
+plotLims = { xmin = -0.25, xmax = 0.5, ymin = -0.5, ymax = 0.7 } # Limits of the plot

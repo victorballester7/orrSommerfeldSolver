@@ -124,8 +124,8 @@ std::vector<double> CustomU::buildNaturalSplineSecondDerivatives(
     const double sig = hPrev / hTot;
     const double p = sig * y2[i - 1] + 2.0;
     y2[i] = (sig - 1.0) / p;
-    const double dd = (ydata[i + 1] - ydata[i]) / hNext -
-                      (ydata[i] - ydata[i - 1]) / hPrev;
+    const double dd =
+        (ydata[i + 1] - ydata[i]) / hNext - (ydata[i] - ydata[i - 1]) / hPrev;
     u[i] = (6.0 * dd / hTot - sig * u[i - 1]) / p;
   }
 
@@ -203,12 +203,6 @@ std::vector<double> CustomU::diffData(const std::vector<double> &xdata,
                    h0 / (h1 * (h0 + h1)) * ydata[i + 1];
   }
   return diff_data;
-}
-
-double OSSolver::getYPhysicalRegion(const OSSolver &solver, uint i) const {
-  // Map the flow profile from the standard region [-1, 1] to the physical
-  // region [a, b]
-  return solver.Uprof->mapToPhysicalRegion(gaussPoints[i]);
 }
 
 void OSSolver::mapToStandardRegion() {
@@ -370,9 +364,8 @@ void OSSolver::buildMatricesSpatial() {
 
   const Matrix R0m = 1.0 / re * T1 - (2.0 / re * beta2 - I * omega) * T2 -
                      (I * omega * beta2 - 1.0 / re * beta2 * beta2) * T3;
-  const Matrix R1m =
-      I * T4 - I * T5 + I * beta2 * T6 -
-      (2.0 * I * omega - 4.0 * beta2 / re) * T7 + 4.0 / re * T8;
+  const Matrix R1m = I * T4 - I * T5 + I * beta2 * T6 -
+                     (2.0 * I * omega - 4.0 * beta2 / re) * T7 + 4.0 / re * T8;
   const Matrix R2m = 4.0 / re * T2 + 2.0 * I * T9;
 
   A = Matrix::Zero(2 * dim, 2 * dim);
@@ -386,11 +379,10 @@ void OSSolver::buildMatricesSpatial() {
 }
 
 Eigen::VectorXcd
-OSSolver::computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs,
-                             std::string branch) const {
+OSSolver::computeEVec(const Eigen::VectorXcd &eigenvector_coeffs,
+                      const std::string branch) const {
   const Eigen::Index dim = static_cast<Eigen::Index>(dimVS);
-  const Eigen::Index expectedSize =
-      (branch == BRANCH_SPATIAL) ? 2 * dim : dim;
+  const Eigen::Index expectedSize = (branch == BRANCH_SPATIAL) ? 2 * dim : dim;
   if (eigenvector_coeffs.size() < expectedSize) {
     throw std::invalid_argument("Eigenvector coefficient size is inconsistent "
                                 "with the current branch.");
@@ -429,19 +421,22 @@ EigenSolution OSSolver::solve() const {
   Matrix Bwork = B;
   Vector alphaVec(nEigen);
   Vector betaVec(nEigen);
-  Matrix VR = Matrix::Zero(nEigen, nEigen); // Right eigenvectors (columns of VR)
+  Matrix VR =
+      Matrix::Zero(nEigen, nEigen); // Right eigenvectors (columns of VR)
 
   char jobvl = 'N'; // No left eigenvectors needed
   char jobvr = 'V'; // Compute right eigenvectors
-  int n = static_cast<int>(nEigen); 
-  int lda = n; // Leading dimension of A
-  int ldb = n; // Leading dimension of B
-  int ldvl = 1; // Leading dimension of VL (not used since jobvl = 'N')
-  int ldvr = n; // Leading dimension of VR
-  int info = 0; // Output info from zggev
-  int lwork = -1; // Workspace query, means "don’t solve yet—tell me how much workspace memory you need"
+  int n = static_cast<int>(nEigen);
+  int lda = n;    // Leading dimension of A
+  int ldb = n;    // Leading dimension of B
+  int ldvl = 1;   // Leading dimension of VL (not used since jobvl = 'N')
+  int ldvr = n;   // Leading dimension of VR
+  int info = 0;   // Output info from zggev
+  int lwork = -1; // Workspace query, means "don’t solve yet—tell me how much
+                  // workspace memory you need"
   std::complex<double> workQuery = 0.0;
-  std::vector<double> rwork(static_cast<size_t>(8 * n), 0.0); // Real workspace for zggev
+  std::vector<double> rwork(static_cast<size_t>(8 * n),
+                            0.0); // Real workspace for zggev
 
   zggev_(&jobvl, &jobvr, &n, Awork.data(), &lda, Bwork.data(), &ldb,
          alphaVec.data(), betaVec.data(), nullptr, &ldvl, VR.data(), &ldvr,

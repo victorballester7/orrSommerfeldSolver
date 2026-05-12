@@ -20,14 +20,15 @@ struct EigenSolution {
 
 class OSSolver {
 public:
-  complex var; // Wavenumber (alpha for temporal, omega for spatial)
-  complex k2;
+  complex& var;  // Wavenumber (alpha for temporal, omega for spatial)
+  complex& beta; // Spanwise wavenumber
+  complex& k2;   // Square of the total wavenumber (alpha^2 + beta^2)
+
 private:
-  uint p;          // Polynomial degree
-  uint dimVS;      // Dimension of the vector space of basis functions
-  double re;       // Reynolds number
+  uint p;     // Polynomial degree
+  uint dimVS; // Dimension of the vector space of basis functions
+  double re;  // Reynolds number
   // complex var;     // Wavenumber
-  complex beta;    // Wavenumber
   // complex k2;      // Square of the wavenumber
   double a = -1.0; // Left boundary of the physical region
   double b = 1.0;  // Right boundary of the physical region
@@ -100,8 +101,8 @@ public:
   Uprofile *Uprof;
 
   OSSolver(Config &config)
-      : p(config.p), re(config.re), var(config.var), beta(config.beta),
-        k2(config.k2) {
+      : var(config.var), beta(config.beta), k2(config.k2), p(config.p),
+        re(config.re) {
 
     assert(p > 3); // Ensure polynomial degree is greater than 3
 
@@ -146,8 +147,6 @@ public:
     buildIntegralBlocks();
   }
 
-  double getYPhysicalRegion(const OSSolver &solver, uint i) const;
-
   void buildMatrices(std::string branch) {
     if (branch == BRANCH_TEMPORAL) {
       buildMatricesTemporal();
@@ -156,16 +155,8 @@ public:
     }
   }
 
-  void setVar(complex var_, std::string branch) {
-    var = var_;
-    if (branch == BRANCH_TEMPORAL) {
-      k2 = var * var + beta * beta;
-    }
-  }
-
-  Eigen::VectorXcd
-  computeEigenvector(const Eigen::VectorXcd &eigenvector_coeffs,
-                     std::string branch) const;
+  Eigen::VectorXcd computeEVec(const Eigen::VectorXcd &eigenvector_coeffs,
+                               const std::string branch) const;
 
   // Solve the generalized eigenvalue problem
   EigenSolution solve() const;

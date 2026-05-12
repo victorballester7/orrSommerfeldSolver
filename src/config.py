@@ -76,8 +76,8 @@ class Config(BaseModel):
     # flags
     branch: Branch
     problem: ProblemType
-    fileWriteEigenvalues: Path
-    fileWriteEigenvector: Path
+    fileWriteEigenvalues: Path = Path("data/eigenvalues.dat")
+    fileWriteEigenvector: Path = Path("data/eigenvector.dat")
     doPlot: bool
     use_c: bool
     multipleRun: bool
@@ -141,13 +141,7 @@ class Config(BaseModel):
         # flags
         data["flags"]["branch"] = Branch(data["flags"]["branch"])
         data["flags"]["problem"] = ProblemType(data["flags"]["problem"])
-        data["flags"]["fileWriteEigenvalues"] = Path(
-            data["flags"]["fileWriteEigenvalues"]
-        )
-        data["flags"]["fileWriteEigenvector"] = Path(
-            data["flags"]["fileWriteEigenvector"]
-        )
-
+        
         # flags for custom problems
         data["customProblemFlags"]["filenameUprofile"] = Path(
             data["customProblemFlags"]["filenameUprofile"]

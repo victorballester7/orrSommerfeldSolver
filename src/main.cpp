@@ -3,7 +3,6 @@
 #include "../include/solver.hpp"
 #include <chrono>
 #include <cstdio>
-#include <iomanip>
 #include <iostream>
 
 int main() {
@@ -24,6 +23,8 @@ int main() {
   std::vector<complex> eigenvalues;
   EigenSolution eig;
 
+  std::string varLabel = config.getVarlabel(config.branch);
+
   if (config.multipleRun) {
     std::vector<complex> vars;
     complex evmax;
@@ -35,45 +36,29 @@ int main() {
         (config.vars_i.num == 1)
             ? 0
             : (config.vars_i.max - config.vars_i.min) / (config.vars_i.num - 1);
-    std::string varLabel = config.getVarlabel();
     for (int i = 0; i < config.vars_r.num; i++) {
       for (int j = 0; j < config.vars_i.num; j++) {
         double var_r = config.vars_r.min + i * dvar_r;
         double var_i = config.vars_i.min + j * dvar_i;
         complex var(var_r, var_i);
-        std::cout << std::fixed << std::setprecision(6)
-                  << "Running simulation for " << varLabel << " = " << var
-                  << ", β = " << config.beta << ", Re = " << config.re
-                  << std::endl;
+        std::cout << "Running simulation for " << varLabel << " = " << var
+                  << ", β = " << config.beta << ", Re = " << config.re;
         config.setVar(var);
-        std::cout << "config.var: " << config.var << std::endl;
-        std::cout << "config.k2: " << config.k2 << std::endl;
-        std::cout << "solver.var: " << solver.var << std::endl;
-        std::cout << "solver.k2: " << solver.k2 << std::endl;
-        solver.setVar(var, config.branch);
-        std::cout << "solver.var: " << solver.var << std::endl;
-        std::cout << "solver.k2: " << solver.k2 << std::endl;
         solver.buildMatrices(config.branch);
         eig = solver.solve();
-        PostProcess pp(eig);
-        // pp.printSpectrum();
-        // evmax = pp.getMostUnstableEigenvalueNotScaled();
-        evmax = pp.getMostUnstableEigenvalue();
-        // std::cout << "Most unstable eigenvalue: " << evmax.real()
-        //       << " + " << evmax.imag() << "i" << std::endl;
+        PostProcess pp(eig, config);
+        evmax = pp.getTargetEVal();
+
+        std::cout << " ==> Most unstable EV: " << evmax << std::endl;
 
         eigenvalues.push_back(evmax);
         vars.push_back(var);
       }
     }
     // Print the results
-    PostProcess pp(eigenvalues);
-    // pp.plotSpectrum();
-    pp.writeToFile(vars);
-
+    PostProcess::writeToFile(vars, eigenvalues, config);
   } else {
-    std::cout << std::fixed << std::setprecision(6) << "Running simulation for "
-              << config.getVarlabel() << " = " << config.var
+    std::cout << "Running simulation for " << varLabel << " = " << config.var
               << ", β = " << config.beta << ", Re = " << config.re << std::endl;
 
     {
@@ -92,21 +77,24 @@ int main() {
       printf("Solve time: %.2f seconds\n",
              std::chrono::duration<double>(end - start).count());
     }
-    PostProcess pp(eig);
-
-    std::string evLabel = config.getEVlabel();
+    PostProcess pp(eig, config);
 
     // Print the results
-    pp.printSpectrum(evLabel);
+    pp.printSpectrum();
 
     // Print the most unstable eigenvalue
-    complex mostUnstableEigenvalue = pp.getMostUnstableEigenvalue();
+    complex mostUnstableEV = pp.getTargetEVal();
+
     // more decimals
     std::cout.precision(15);
-    std::cout << "Most unstable eigenvalue: " << mostUnstableEigenvalue.real()
-              << " + " << mostUnstableEigenvalue.imag() << "i" << std::endl;
+    std::cout << "Most unstable eigenvalue: " << mostUnstableEV << std::endl;
+    // std::cout << "Most unstable eigenvalue: " << mostUnstableEV.real() << " +
+    // "
+    //           << mostUnstableEV.imag() << "i" << std::endl;
 
-    pp.writeToFile(evLabel, solver);
+    Vector evec = solver.computeEVec(pp.getTargetEVec(), config.branch);
+
+    pp.writeToFile(solver.gaussPoints, evec, solver.Uprof);
   }
 
   return 0;

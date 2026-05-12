@@ -8,7 +8,7 @@
 #include <string>
 
 using complex = std::complex<double>;
-
+std::ostream &operator<<(std::ostream &os, const complex &z);
 // define available values for branch: temporal or spatial
 
 constexpr const char *BRANCH_TEMPORAL = "temporal";
@@ -33,6 +33,10 @@ struct PlotLims {
   double ymax;
 };
 
+#include <cmath>
+#include <complex>
+#include <iostream>
+
 class Config {
 public:
   // General
@@ -49,8 +53,6 @@ public:
   std::string problem;
   const std::set<std::string> problems = {PB_POISEUILLE, PB_BOUNDARY_LAYER,
                                           PB_COUETTE, PB_CUSTOM};
-  std::string filenameEigenvalues;
-  std::string filenameEigenvector;
   bool doPlot;
   bool use_c;
   bool multipleRun;
@@ -80,8 +82,20 @@ public:
     }
   }
 
-  std::string getVarlabel() const;
-  std::string getEVlabel() const;
+  static std::string getVarlabel(std::string _branch) {
+    if (_branch == BRANCH_TEMPORAL) {
+      return "α";
+    } else {
+      return "ω";
+    }
+  }
+  static std::string getEVlabel(std::string _branch, bool _use_c) {
+    if (_branch == BRANCH_TEMPORAL) {
+      return _use_c ? "c" : "ω";
+    } else {
+      return "α";
+    }
+  }
 
 private:
   complex parseComplex(const toml::node_view<toml::node> &node) const {

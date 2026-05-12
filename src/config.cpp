@@ -3,6 +3,28 @@
 #include <iostream>
 #include <string>
 
+std::ostream &operator<<(std::ostream &os, const complex &z) {
+  const double re = z.real();
+  const double im = z.imag();
+  const double tol = 1e-10;
+
+  if (std::abs(re) > tol) {
+    os << re;
+  }
+
+  if (im > tol) {
+    os << " + " << im << "i";
+  } else if (im < -tol) {
+    os << " - " << std::abs(im) << "i";
+  } 
+
+  if (std::abs(re) <= tol && std::abs(im) <= tol) {
+    os << "0";
+  }
+
+  return os;
+}
+
 // Load config from TOML file
 bool Config::load(const std::string &filename) {
   try {
@@ -24,7 +46,7 @@ bool Config::load(const std::string &filename) {
     const auto &multipleRunParams = tbl["multipleRunParams"];
     vars_r = parseRange(multipleRunParams["vars_r"]);
     vars_i = parseRange(multipleRunParams["vars_i"]);
-    
+
     // Flags
     const auto &flags = tbl["flags"];
     std::string field = "branch";
@@ -36,8 +58,6 @@ bool Config::load(const std::string &filename) {
     problem = flags[field].value_or("");
     isValidMessage(field, problem, problems);
 
-    filenameEigenvalues = flags["fileWriteEigenvalues"].value_or("");
-    filenameEigenvector = flags["fileWriteEigenvector"].value_or("");
     doPlot = flags["doPlot"].value_or(false);
     use_c = flags["use_c"].value_or(false);
     multipleRun = flags["multipleRun"].value_or(false);
@@ -61,24 +81,5 @@ bool Config::load(const std::string &filename) {
   } catch (const toml::parse_error &err) {
     std::cerr << "TOML Parse error: " << err << std::endl;
     return false;
-  }
-}
-
-std::string Config::getEVlabel() const {
-  if (branch == BRANCH_TEMPORAL) {
-    if (use_c)
-      return "c";
-    else
-      return "ω";
-  } else {
-    return "α";
-  }
-}
-
-std::string Config::getVarlabel() const {
-  if (branch == BRANCH_TEMPORAL) {
-    return "α";
-  } else {
-    return "ω";
   }
 }
