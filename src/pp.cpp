@@ -7,17 +7,21 @@
 #include <string>
 #include <tuple>
 
-std::complex<double> PostProcess::rescaleFactorEV(const std::string branch,
-                                                  const complex var,
-                                                  const bool use_c) const {
+void PostProcess::rescaleEV(complex &ev, const std::string branch,
+                            const complex var, const bool use_c) const {
   // Rescale eigenvalue by the factor alpha
-  double tol_alpha = 1e-10;
-  if (branch == BRANCH_TEMPORAL && abs(var) > tol_alpha && use_c) {
+  double tol_var = 1e-10;
+  if (branch == BRANCH_TEMPORAL && abs(var) > tol_var && use_c) {
     // lambda is omega (so config.var = alpha), so we want c
-    return 1. / var;
-  } else {
-    return 1.;
+    // return 1. / var;
+    ev = ev / var;
+  } else if (branch == BRANCH_SPATIAL && abs(var) > tol_var && use_c) {
+    // lambda is alpha (so config.var = omega), so we want c
+    ev = ev / var;
   }
+  // else {
+  //   // return 1.;
+  // }
 }
 
 std::vector<size_t>
@@ -114,8 +118,7 @@ PostProcess::getRankedFiniteEVIndices(const std::string branch,
       filtered.reserve(indices.size());
 
       for (size_t idx : indices) {
-        if (eigenvalues[idx].imag() <= -0.8 || eigenvalues[idx].imag() >= 0.8 ||
-            eigenvalues[idx].real() > 1) {
+        if (eigenvalues[idx].imag() <= -1 || eigenvalues[idx].imag() >= 1 || eigenvalues[idx].real() <= 1.5 || eigenvalues[idx].real() >= 20) {
           continue;
         }
         filtered.push_back(idx);
@@ -124,10 +127,10 @@ PostProcess::getRankedFiniteEVIndices(const std::string branch,
       indices.swap(filtered);
 
       std::sort(indices.begin(), indices.end(), [&](size_t lhs, size_t rhs) {
-        if (eigenvalues[lhs].real() != eigenvalues[rhs].real()) {
-          return eigenvalues[lhs].real() > eigenvalues[rhs].real();
+        if (eigenvalues[lhs].imag() != eigenvalues[rhs].imag()) {
+          return eigenvalues[lhs].imag() < eigenvalues[rhs].imag();
         }
-        return eigenvalues[lhs].imag() < eigenvalues[rhs].imag();
+        return eigenvalues[lhs].real() > eigenvalues[rhs].real();
       });
     }
   }
@@ -178,8 +181,7 @@ void PostProcess::writeToFile(const std::vector<double> &y,
   // eigenvalues
   std::ofstream file(eValsFilename);
   if (!file.is_open()) {
-    std::cerr << "Error opening file: " << eValsFilename << std::endl;
-    return;
+    throw std::runtime_error("Error opening file: " + eValsFilename);
   }
   file << "# Re(" << evLabel << ")   Im(" << evLabel << ")" << std::endl;
   for (const auto &lambda : eigenvalues) {
@@ -190,8 +192,7 @@ void PostProcess::writeToFile(const std::vector<double> &y,
   // eigenvector
   std::ofstream file2(eVecsFilename);
   if (!file2.is_open()) {
-    std::cerr << "Error opening file: " << eVecsFilename << std::endl;
-    return;
+    throw std::runtime_error("Error opening file: " + eVecsFilename);
   }
 
   file2 << "# y   Re(v)   Im(v)" << std::endl;

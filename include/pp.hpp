@@ -22,12 +22,11 @@ class PostProcess {
   const size_t num_ev = 20;
   std::vector<size_t> evals_idx;
   size_t idx_target;
-  complex rescaleFactor = 1;
+  // complex rescaleFactor = 1;
   std::string evLabel;
 
-  std::complex<double> rescaleFactorEV(const std::string branch,
-                                       const complex var,
-                                       const bool use_c) const;
+  void rescaleEV(complex &ev, const std::string branch, const complex var,
+                 const bool use_c) const;
   std::vector<size_t> getRankedFiniteEVIndices(const std::string branch,
                                                const std::string problem) const;
 
@@ -40,9 +39,9 @@ public:
         std::vector<complex>(_eig.eigenvalues.data(),
                              _eig.eigenvalues.data() + _eig.eigenvalues.size());
     // rescale eigenvalues to use c if possible
-    rescaleFactor = rescaleFactorEV(config.branch, config.var, config.use_c);
+    // rescaleFactor = rescaleFactorEV(config.branch, config.var, config.use_c);
 
-    if (config.branch == BRANCH_TEMPORAL && std::abs(config.var) > 1e-10) {
+    if (std::abs(config.var) > 1e-10) {
       // rescale EVs by alpha to get c (for better post-processing)
       for (auto &ev : eigenvalues) {
         ev *= 1. / config.var;
@@ -54,13 +53,20 @@ public:
     evals_idx = getRankedFiniteEVIndices(config.branch, config.problem);
 
     for (auto &ev : eigenvalues) {
-      if (config.branch == BRANCH_TEMPORAL && std::abs(config.var) > 1e-10) {
+      if (std::abs(config.var) > 1e-10) {
         ev *= config.var; // rescale back to omega
       }
-      ev *= rescaleFactor;
+      rescaleEV(ev, config.branch, config.var, config.use_c);
     }
     evLabel = Config::getEVlabel(config.branch, config.use_c);
-    idx_target = getIdxMostUnstableEV(config.useTargetEV, config.targetEV);
+    if (evals_idx.empty()) {
+      std::cerr
+          << "Warning: No finite eigenvalues found. Using index 0 as fallback."
+          << std::endl;
+      idx_target = 0;
+    } else {
+      idx_target = getIdxMostUnstableEV(config.useTargetEV, config.targetEV);
+    }
   }
 
   complex getTargetEVal() const;
@@ -77,8 +83,7 @@ public:
     // eigenvalues
     std::ofstream file(eValsFilename);
     if (!file.is_open()) {
-      std::cerr << "Error opening file: " << eValsFilename << std::endl;
-      return;
+      throw std::runtime_error("Error opening file: " + eValsFilename);
     }
 
     std::string evLabel = Config::getEVlabel(config.branch, config.use_c);

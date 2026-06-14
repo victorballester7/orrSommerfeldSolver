@@ -41,8 +41,7 @@ void CustomU::readFromFile(const std::string &filename,
                            uint numSkipHeaderLines) const {
   std::ifstream file(filename);
   if (!file.is_open()) {
-    std::cerr << "Error opening file: " << filename << std::endl;
-    return;
+    throw std::runtime_error("Error opening file: " + filename);
   }
   // Skip header lines
   std::string line;
