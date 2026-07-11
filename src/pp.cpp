@@ -118,7 +118,7 @@ PostProcess::getRankedFiniteEVIndices(const std::string branch,
       filtered.reserve(indices.size());
 
       for (size_t idx : indices) {
-        if (eigenvalues[idx].imag() <= -1 || eigenvalues[idx].imag() >= 1 || eigenvalues[idx].real() <= 1.5 || eigenvalues[idx].real() >= 20) {
+        if (eigenvalues[idx].imag() <= -3 || eigenvalues[idx].imag() >= 1 || eigenvalues[idx].real() <= 1.5 || eigenvalues[idx].real() >= 20) {
           continue;
         }
         filtered.push_back(idx);
